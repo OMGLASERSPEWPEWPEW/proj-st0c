@@ -1,0 +1,167 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-08-22",
+  "asof": "2025-08-22T15:05:00-05:00",
+  "verdict": "Risk-on",
+  "tldr": "Broad risk appetite into the close: SPY rallied while VIX eased back toward the mid-teens. RKLB bounced hard into its 70th Electron mission window amid upbeat cadence headlines; OKLO recovered with SMR peers after a choppy week and fresh coverage notes. Macro focus turns to next week’s Core PCE and a dense data slate that could sway rates path. For Monday (Aug 25), we favor a modest upside bias in RKLB on follow-through and a smaller upside in OKLO absent negative headlines; SPY drift higher / vol softer unless data or weekend events surprise.",
+  "tickers": {
+    "OKLO": {
+      "close": 70.38,
+      "pct_change": 4.75,
+      "streak": 3,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 0.8,
+      "expected_degree": "Small",
+      "action": "Hold",
+      "dip_onset_prob": 35,
+      "dip_exhaustion_prob": 30
+    },
+    "RKLB": {
+      "close": 44.38,
+      "pct_change": 6.86,
+      "streak": 2,
+      "call": "Positive",
+      "confidence": 3,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 1.3,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 22,
+      "dip_exhaustion_prob": 48
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 645.31, "predicted_next_day_pct": 0.4 },
+    "VIXY": { "close": 35.19, "predicted_next_day_pct": -1.2 },
+    "VIXM": { "close": 16.12, "predicted_next_day_pct": -0.5 },
+    "VIX": 14.22
+  },
+  "prices": {
+    "OKLO": { "open": 67.86, "high": 71.90, "low": 67.80, "close": 70.38, "volume": 4781999 },
+    "RKLB": { "open": 40.97, "high": 44.68, "low": 40.42, "close": 44.38, "volume": 18737800 },
+    "SPY":  { "open": 638.78, "high": 648.09, "low": 636.49, "close": 645.31, "volume": 61117700 },
+    "VIXY": { "open": 37.97, "high": 38.07, "low": 35.01, "close": 35.19, "volume": 3133500 },
+    "VIXM": { "open": 16.24, "high": 16.45, "low": 15.86, "close": 16.12, "volume": 553700 },
+    "VIX":  { "open": 16.81, "high": 16.83, "low": 14.21, "close": 14.22 }
+  },
+  "macro_watch": [
+    { "event": "Nonfarm Payrolls (Jobs Report)", "source": "BLS / Investing.com", "link": "https://www.investing.com/economic-calendar/nonfarm-payrolls-227" },
+    { "event": "CPI YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/cpi-733" },
+    { "event": "Core PCE YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-905", "next_release_hint": "2025-08-29 08:30 ET" },
+    { "event": "Core PCE MoM", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-61" },
+    { "event": "ISM Manufacturing PMI", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173" },
+    { "event": "ISM Services PMI", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176" },
+    { "event": "Retail Sales (Core/MoM)", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-retail-sales-63" },
+    { "event": "PPI YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ppi-734" },
+    { "event": "Initial Jobless Claims", "source": "MarketWatch calendar", "link": "https://www.marketwatch.com/economy-politics/calendar" },
+    { "event": "FOMC/Minutes/Rate Decision", "source": "Investing.com Calendar", "link": "https://m.investing.com/economic-calendar/" }
+  ],
+  "sources": [
+    {
+      "type": "price",
+      "ticker": "OKLO",
+      "title": "Oklo (OKLO) Historical Data",
+      "author": "Stock Analysis",
+      "url": "https://stockanalysis.com/stocks/oklo/history/",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: Open 67.86, High 71.90, Low 67.80, Close 70.38, Vol 4.78M"
+    },
+    {
+      "type": "price",
+      "ticker": "RKLB",
+      "title": "Rocket Lab (RKLB) Historical Prices",
+      "author": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/RKLB/history/",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: 40.97 / 44.68 / 40.42 / 44.38 (Close) Vol 18.74M"
+    },
+    {
+      "type": "price",
+      "ticker": "SPY",
+      "title": "SPY Historical Prices",
+      "author": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/SPY/history/",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: 638.78 / 648.09 / 636.49 / 645.31 Vol 61.1M"
+    },
+    {
+      "type": "price",
+      "ticker": "VIXY",
+      "title": "VIXY Historical Prices",
+      "author": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/VIXY/history/",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: 37.97 / 38.07 / 35.01 / 35.19 Vol 3.13M"
+    },
+    {
+      "type": "price",
+      "ticker": "VIXM",
+      "title": "VIXM Historical Prices",
+      "author": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/VIXM/history/",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: 16.24 / 16.45 / 15.86 / 16.12 Vol 553.7K"
+    },
+    {
+      "type": "price",
+      "ticker": "VIX",
+      "title": "CBOE Volatility Index (VIX) Historical",
+      "author": "Investing.com",
+      "url": "https://www.investing.com/indices/volatility-s-p-500-historical-data",
+      "date_accessed": "2025-08-24",
+      "excerpt": "Aug 22, 2025: Open 16.81, High 16.83, Low 14.21, Close 14.22"
+    },
+    {
+      "type": "company_news",
+      "ticker": "RKLB",
+      "title": "Rocket Lab Sets Launch Window for 70th Electron Mission",
+      "author": "Business Wire",
+      "url": "https://www.businesswire.com/news/home/20250818270931/en/Rocket-Lab-Sets-Launch-Window-for-70th-Electron-Mission",
+      "date_published": "2025-08-18",
+      "stance": "positive",
+      "excerpt": "Launch window for Electron #70 ('Live, Laugh, Launch') opens Aug 23 to deploy 5 satellites."
+    },
+    {
+      "type": "company_news",
+      "ticker": "RKLB",
+      "title": "SpaceX Rival Preps For Milestone Launch",
+      "author": "Investor’s Business Daily",
+      "url": "https://www.investors.com/news/rocket-lab-70-electron-mission-spacex-rival-preps-for-milestone-launch-how-to-watch/",
+      "date_published": "2025-08-22",
+      "stance": "positive",
+      "excerpt": "70th Electron mission slated for the weekend; highlights cadence and upcoming U.S. complex."
+    },
+    {
+      "type": "company_news",
+      "ticker": "OKLO",
+      "title": "UBS initiates Oklo stock with Neutral rating, $65 PT",
+      "author": "Investing.com",
+      "url": "https://www.investing.com/news/analyst-ratings/ubs-initiates-oklo-stock-with-neutral-rating-65-price-target-93CH-4201470",
+      "date_published": "2025-08-20",
+      "stance": "neutral",
+      "excerpt": "UBS starts coverage at Neutral with $65 target; highlights long runway but execution risks."
+    },
+    {
+      "type": "company_news",
+      "ticker": "OKLO",
+      "title": "Oklo sets up digital monitoring room with ABB",
+      "author": "Investing.com",
+      "url": "https://www.investing.com/news/company-news/oklo-sets-up-digital-monitoring-room-with-abb-for-nuclear-operations-93CH-4204472",
+      "date_published": "2025-08-21",
+      "stance": "positive",
+      "excerpt": "Partnership/monitoring room aims to support future nuclear operations and ops readiness."
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Small", "reason": "SMR basket firmed; neutral-but-not-bearish coverage; no fresh negatives." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Launch cadence + weekend milestone momentum; positive sentiment spillover." }
+    }
+  },
+  "totals": { "correct": 0, "incorrect": 0, "success_rate": 0.0 },
+  "notes": "First entry using expanded schema for ML-ready archiving. Weekend check: this date is a Friday (market open). Predictions target Monday, Aug 25, 2025."
+}
