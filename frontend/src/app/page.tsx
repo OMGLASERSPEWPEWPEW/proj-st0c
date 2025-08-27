@@ -132,6 +132,45 @@ export default function TrackerDashboard() {
   // =============================
   // Event Handlers
   // =============================
+  async function handleLoadFromRaw() {
+    console.log('TrackerDashboard.handleLoadFromRaw: Loading JSON files from data/raw');
+    
+    try {
+      const response = await fetch('/api/data');
+      const result = await response.json();
+      
+      console.log('TrackerDashboard.handleLoadFromRaw: API response:', result);
+      
+      if (!result.success) {
+        alert(`Failed to load from data/raw: ${result.error}\nPath checked: ${result.path || 'unknown'}`);
+        return;
+      }
+      
+      if (!Array.isArray(result.data)) {
+        alert(`API returned invalid data format. Expected array, got: ${typeof result.data}`);
+        console.error('TrackerDashboard.handleLoadFromRaw: Invalid data format:', result.data);
+        return;
+      }
+      
+      if (result.data.length === 0) {
+        alert(`Found ${result.files_found || 0} JSON files but none had valid tracker data.`);
+        return;
+      }
+      
+      // Merge with existing history
+      const newHistory = mergeHistory(history, result.data);
+      setHistory(newHistory);
+      saveHistory(newHistory);
+      
+      alert(`Successfully loaded ${result.entries_loaded} entries from ${result.files_found} JSON files.`);
+      console.log('TrackerDashboard.handleLoadFromRaw: Loaded', result.entries_loaded, 'entries');
+      
+    } catch (error) {
+      console.error('TrackerDashboard.handleLoadFromRaw: API call failed:', error);
+      alert('Failed to connect to API. Make sure the development server is running.');
+    }
+  }
+
   function handleAdd() {
     console.log('TrackerDashboard.handleAdd: Processing input of length', input.length);
     
@@ -320,44 +359,33 @@ export default function TrackerDashboard() {
         </Card>
       )}
 
-      {/* Input Section */}
+       {/* Price Chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Paste today's ```trackerjson```</CardTitle>
+        <CardHeader>
+          <CardTitle className="text-lg">Price history</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Paste the entire ```trackerjson``` block from the daily ~305 PM CST report..."
-              className="min-h-[120px] font-mono text-sm resize-none"
-            />
-          </div>
-          <div className="flex items-center gap-8">
-            <div className="flex flex-wrap gap-2">
-              {allKeys.map(k => (
-                <div key={k} className="flex items-center space-x-1">
-                  <Switch 
-                    id={k} 
-                    checked={show[k] || false} 
-                    onCheckedChange={(checked) => setShow(prev => ({ ...prev, [k]: checked }))} 
-                  />
-                  <Label htmlFor={k} className="text-sm font-mono">{k}</Label>
-                </div>
+        <CardContent className="h-[380px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartRows} margin={{ left: 8, right: 16, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+              <Legend formatter={legendFormatter} />
+              {activeSeries.map((key) => (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  stroke={COLOR_BY_SERIES[key.replace("_PRED", "")] || undefined}
+                  dot={key.endsWith("_PRED")}
+                  strokeDasharray={key.endsWith("_PRED") ? "5 5" : undefined}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
               ))}
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAdd} className="gap-2">
-                <PlusCircle className="w-4 h-4" />
-                Add to history
-              </Button>
-              <Button variant="outline" size="sm" onClick={runSelfTests}>
-                <Bug className="w-4 h-4 mr-2" />
-                Run self tests
-              </Button>
-            </div>
-          </div>
+            </LineChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
 
@@ -501,46 +529,43 @@ export default function TrackerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(latest.prices).map(([ticker, priceData]) => {
-                    if (!priceData || typeof priceData !== 'object') return null;
-                    return (
-                      <div key={ticker} className="border rounded-lg p-3">
-                        <h3 className="font-semibold font-mono mb-2">{ticker}</h3>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                  {Object.entries(latest.prices).map(([ticker, priceData]) => (
+                    <div key={ticker} className="border rounded-lg p-3">
+                      <h3 className="font-semibold font-mono mb-2">{ticker}</h3>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {typeof priceData.open === 'number' && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Open:</span>
-                            <span className="font-mono">
-                              {typeof priceData.open === 'number' ? `${priceData.open.toFixed(2)}` : '—'}
-                            </span>
+                            <span className="font-mono">${priceData.open.toFixed(2)}</span>
                           </div>
+                        )}
+                        {typeof priceData.high === 'number' && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">High:</span>
-                            <span className="font-mono text-emerald-600">
-                              {typeof priceData.high === 'number' ? `${priceData.high.toFixed(2)}` : '—'}
-                            </span>
+                            <span className="font-mono text-emerald-600">${priceData.high.toFixed(2)}</span>
                           </div>
+                        )}
+                        {typeof priceData.low === 'number' && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Low:</span>
-                            <span className="font-mono text-rose-600">
-                              {typeof priceData.low === 'number' ? `${priceData.low.toFixed(2)}` : '—'}
-                            </span>
+                            <span className="font-mono text-rose-600">${priceData.low.toFixed(2)}</span>
                           </div>
+                        )}
+                        {typeof priceData.close === 'number' && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Close:</span>
-                            <span className="font-mono font-semibold">
-                              {typeof priceData.close === 'number' ? `${priceData.close.toFixed(2)}` : '—'}
-                            </span>
+                            <span className="font-mono font-semibold">${priceData.close.toFixed(2)}</span>
                           </div>
-                          {priceData.volume && typeof priceData.volume === 'number' && (
-                            <div className="flex justify-between col-span-2">
-                              <span className="text-muted-foreground">Volume:</span>
-                              <span className="font-mono">{(priceData.volume / 1000000).toFixed(2)}M</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
+                        {typeof priceData.volume === 'number' && (
+                          <div className="flex justify-between col-span-2">
+                            <span className="text-muted-foreground">Volume:</span>
+                            <span className="font-mono">{(priceData.volume / 1000000).toFixed(2)}M</span>
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -548,165 +573,11 @@ export default function TrackerDashboard() {
         </div>
       )}
 
-      {/* Macro Events Calendar */}
-      {latest?.macro_watch && latest.macro_watch.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Macro Events Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {latest.macro_watch.map((event, i) => (
-                <div key={i} className="border rounded-lg p-3">
-                  <h4 className="font-semibold text-sm mb-1">{event.event}</h4>
-                  <div className="text-xs text-muted-foreground mb-2">
-                    Source: {event.source}
-                  </div>
-                  {event.next_release_hint && (
-                    <div className="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
-                      Next: {event.next_release_hint}
-                    </div>
-                  )}
-                  <a 
-                    href={event.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 block"
-                  >
-                    View Details →
-                  </a>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* News Sources & Sentiment */}
-      {latest?.sources && latest.sources.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">News Sources & Market Sentiment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {latest.sources.map((source, i) => (
-                <div key={i} className="border rounded-lg p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm">{source.title}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {source.author}
-                        </span>
-                        {source.ticker && (
-                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-mono">
-                            {source.ticker}
-                          </span>
-                        )}
-                        {source.stance && (
-                          <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                            source.stance === 'positive' ? 'bg-emerald-50 text-emerald-700' :
-                            source.stance === 'negative' ? 'bg-rose-50 text-rose-700' :
-                            'bg-slate-50 text-slate-700'
-                          }`}>
-                            {source.stance}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {source.excerpt && (
-                    <p className="text-sm text-muted-foreground italic mb-2">
-                      "{source.excerpt}"
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      {source.date_published && `Published: ${source.date_published}`}
-                      {source.date_accessed && ` • Accessed: ${source.date_accessed}`}
-                    </span>
-                    <a 
-                      href={source.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Read Full Article →
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Price Chart */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Price history</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[380px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartRows} margin={{ left: 8, right: 16, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-              <Legend formatter={legendFormatter} />
-              {activeSeries.map((key) => (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={COLOR_BY_SERIES[key.replace("_PRED", "")] || undefined}
-                  dot={key.endsWith("_PRED")}
-                  strokeDasharray={key.endsWith("_PRED") ? "5 5" : undefined}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+     
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Latest Snapshot</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {latest ? (
-              <>
-                <div className="text-sm text-muted-foreground">{latest.date}</div>
-                <div className="space-y-1">
-                  {Object.entries(latest.tickers).map(([k, v]) => (
-                    <div key={k} className="flex items-center justify-between font-mono text-sm">
-                      <span>{k}</span>
-                      <span>{isFinite(Number(v.close)) ? Number(v.close).toFixed(2) : "-"}</span>
-                    </div>
-                  ))}
-                  {latest.benchmarks && (
-                    <>
-                      <div className="mt-2 text-xs uppercase text-muted-foreground">Benchmarks</div>
-                      {Object.entries(latest.benchmarks).map(([k, v]) => (
-                        <div key={k} className="flex items-center justify-between font-mono text-sm">
-                          <span>{k}</span>
-                          <span>{isFinite(Number(typeof v === "number" ? v : (v as any)?.close)) ? Number(typeof v === "number" ? v : (v as any)?.close).toFixed(2) : "-"}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">No entries yet. Paste a ```trackerjson``` above.</div>
-            )}
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader>
@@ -743,21 +614,7 @@ export default function TrackerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Tips</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-2">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>
-                Paste today's <span className="font-mono">```trackerjson```</span> (or an <em>exported array</em>) and click <strong>Add to history</strong> — bulk import & de‑dupe by date.
-              </li>
-              <li>Weekend guard: if the pasted date falls on Sat/Sun you'll be prompted to skip to avoid skew.</li>
-              <li>Toggle tickers to show/hide them from the chart. Use <strong>Normalize</strong> to compare trends.</li>
-              <li>Use <strong>Export JSON</strong> to download your full history (an array of daily objects).</li>
-            </ul>
-          </CardContent>
-        </Card>
+       
       </div>
 
       {/* Test Results */}

@@ -23,10 +23,10 @@ export type TickerSnapshot = {
 export type BenchmarkValue = number | { close: number; predicted_next_day_pct?: number };
 
 export type OHLCVData = {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close: number;  // close is required
   volume?: number;
 };
 

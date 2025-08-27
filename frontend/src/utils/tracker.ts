@@ -41,31 +41,77 @@ export function isWeekendDate(dateStr: string): boolean {
 export function parseArrayOrSingle(text: string): TrackerJson[] | null {
   if (!text.trim()) return [];
 
-  // Extract content from ```trackerjson blocks
-  const codeBlockMatch = text.match(/```trackerjson\s*([\s\S]*?)\s*```/);
-  if (codeBlockMatch) {
-    text = codeBlockMatch[1];
+  // Extract content from ```trackerjson blocks (can be multiple)
+  const codeBlockMatches = text.match(/```trackerjson\s*([\s\S]*?)\s*```/g);
+  if (codeBlockMatches && codeBlockMatches.length > 0) {
+    console.log('tracker.parseArrayOrSingle: Found', codeBlockMatches.length, 'trackerjson blocks');
+    const allParsed: TrackerJson[] = [];
+    
+    for (const match of codeBlockMatches) {
+      const content = match.replace(/```trackerjson\s*/, '').replace(/\s*```$/, '');
+      try {
+        const parsed = JSON.parse(content.trim());
+        if (parsed && typeof parsed === 'object' && typeof parsed.date === 'string') {
+          allParsed.push(parsed as TrackerJson);
+        }
+      } catch (e) {
+        console.error('tracker.parseArrayOrSingle: Failed to parse trackerjson block:', e);
+      }
+    }
+    
+    return allParsed.length > 0 ? allParsed : null;
   }
 
   try {
     const parsed = JSON.parse(text.trim());
     
     if (Array.isArray(parsed)) {
+      console.log('tracker.parseArrayOrSingle: Parsing array of', parsed.length, 'items');
       return parsed.filter((item): item is TrackerJson => 
         item && typeof item === 'object' && typeof item.date === 'string'
       );
     } else if (parsed && typeof parsed === 'object' && typeof parsed.date === 'string') {
+      console.log('tracker.parseArrayOrSingle: Parsing single JSON object');
       return [parsed as TrackerJson];
     }
     
+    console.log('tracker.parseArrayOrSingle: Invalid JSON structure');
     return null;
   } catch (e) {
     console.error('tracker.parseArrayOrSingle: JSON parse failed:', e);
-    return null;
+    
+    // Try to handle multiple JSON objects separated by newlines/whitespace
+    try {
+      console.log('tracker.parseArrayOrSingle: Attempting to parse multiple separate JSON objects');
+      const jsonObjects = text.trim().split(/\n\s*(?=\{)/).filter(s => s.trim());
+      const parsed: TrackerJson[] = [];
+      
+      for (const jsonStr of jsonObjects) {
+        try {
+          const obj = JSON.parse(jsonStr.trim());
+          if (obj && typeof obj === 'object' && typeof obj.date === 'string') {
+            parsed.push(obj as TrackerJson);
+          }
+        } catch (innerE) {
+          // Skip invalid JSON objects
+          console.log('tracker.parseArrayOrSingle: Skipping invalid JSON object');
+        }
+      }
+      
+      return parsed.length > 0 ? parsed : null;
+    } catch (finalE) {
+      console.error('tracker.parseArrayOrSingle: All parsing attempts failed');
+      return null;
+    }
   }
 }
 
-export function mergeHistory(existing: TrackerJson[], incoming: TrackerJson[]): TrackerJson[] {
+export function mergeHistory(existing: TrackerJson[], incoming: TrackerJson[] | null | undefined): TrackerJson[] {
+  if (!Array.isArray(incoming)) {
+    console.error('tracker.mergeHistory: incoming data is not an array:', incoming);
+    return existing;
+  }
+  
   const dateSet = new Set(existing.map(h => h.date));
   const newEntries = incoming.filter(h => !dateSet.has(h.date));
   const merged = [...existing, ...newEntries];
