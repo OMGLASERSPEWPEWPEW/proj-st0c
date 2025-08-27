@@ -1,0 +1,175 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-08-25",
+  "asof": "2025-08-25T15:05:00-05:00",
+  "verdict": "Risk-on",
+  "tldr": "Stocks chopped early and firmed into the close as SPY eased from Friday’s highs but held trend while VIX stayed in the mid-teens. RKLB extended Friday’s momentum after its 70th Electron milestone; OKLO was bid with SMR peers amid steady coverage/ABB partnership chatter. Macro tape was light ahead of this week’s Core PCE and a dense calendar; rates implied volatility was contained. Setup for Tuesday: modest risk-on unless an overnight macro headline flips the tone. We keep a constructive near-term bias in RKLB (launch cadence/positive sentiment) and a steadier, moderate bias in OKLO (basket support, neutral-to-positive news flow).",
+  "tickers": {
+    "OKLO": {
+      "close": 71.19,
+      "pct_change": 1.15,
+      "streak": 3,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": true,
+      "predicted_next_day_pct": 1.5,
+      "expected_degree": "Moderate",
+      "action": "Buy",
+      "dip_onset_prob": 20,
+      "dip_exhaustion_prob": 15
+    },
+    "RKLB": {
+      "close": 47.22,
+      "pct_change": 6.40,
+      "streak": 4,
+      "call": "Positive",
+      "confidence": 3,
+      "actual_move": "Up",
+      "correct": true,
+      "predicted_next_day_pct": 2.8,
+      "expected_degree": "Large",
+      "action": "Buy",
+      "dip_onset_prob": 10,
+      "dip_exhaustion_prob": 10
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 642.47, "predicted_next_day_pct": 0.3 },
+    "VIXY": { "close": 35.13, "predicted_next_day_pct": -0.8 },
+    "VIXM": { "close": 16.20, "predicted_next_day_pct": -0.4 },
+    "VIX": 14.79
+  },
+  "prices": {
+    "OKLO": { "open": 71.35, "high": 71.95, "low": 67.85, "close": 71.19, "volume": 8683600 },
+    "RKLB": { "open": 45.16, "high": 49.59, "low": 44.05, "close": 47.22, "volume": 30133200 },
+    "SPY":  { "open": 644.04, "high": 645.29, "low": 642.35, "close": 642.47, "volume": 51274300 },
+    "VIXY": { "open": 35.43, "high": 35.64, "low": 34.90, "close": 35.13, "volume": 1364800 },
+    "VIXM": { "open": 16.11, "high": 16.24, "low": 16.06, "close": 16.20, "volume": 427200 },
+    "VIX":  { "open": 15.05, "high": 15.19, "low": 14.24, "close": 14.79 }
+  },
+  "macro_watch": [
+    { "event": "Nonfarm Payrolls (Jobs Report)", "source": "BLS / Investing.com", "link": "https://www.investing.com/economic-calendar/nonfarm-payrolls-227" },
+    { "event": "CPI YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/cpi-733" },
+    { "event": "Core PCE YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-905" },
+    { "event": "Core PCE MoM", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-61" },
+    { "event": "ISM Manufacturing PMI", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173" },
+    { "event": "ISM Services PMI", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176" },
+    { "event": "Retail Sales (Core/MoM)", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-retail-sales-63" },
+    { "event": "PPI YoY", "source": "Investing.com", "link": "https://www.investing.com/economic-calendar/ppi-734" },
+    { "event": "Initial Jobless Claims", "source": "MarketWatch", "link": "https://www.marketwatch.com/economy-politics/calendar" },
+    { "event": "FOMC/Minutes/Rate Decision", "source": "Investing.com", "link": "https://m.investing.com/economic-calendar/" }
+  ],
+  "sources": [
+    {
+      "type": "price",
+      "ticker": "OKLO",
+      "publisher": "Yahoo Finance",
+      "title": "Oklo (OKLO) Historical Data",
+      "url": "https://finance.yahoo.com/quote/OKLO/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — Open 71.35, High 71.95, Low 67.85, Close 71.19; Vol 8.68M"
+    },
+    {
+      "type": "price",
+      "ticker": "RKLB",
+      "publisher": "Yahoo Finance",
+      "title": "Rocket Lab (RKLB) Historical Prices",
+      "url": "https://finance.yahoo.com/quote/RKLB/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — 45.16 / 49.59 / 44.05 / 47.22; Vol 30.13M"
+    },
+    {
+      "type": "price",
+      "ticker": "SPY",
+      "publisher": "Yahoo Finance",
+      "title": "SPY Historical Prices",
+      "url": "https://finance.yahoo.com/quote/SPY/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — 644.04 / 645.29 / 642.35 / 642.47; Vol 51.27M"
+    },
+    {
+      "type": "price",
+      "ticker": "VIX",
+      "publisher": "Yahoo Finance",
+      "title": "CBOE Volatility Index (^VIX) Historical Data",
+      "url": "https://finance.yahoo.com/quote/%5EVIX/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — Open 15.05, High 15.19, Low 14.24, Close 14.79"
+    },
+    {
+      "type": "price",
+      "ticker": "VIXY",
+      "publisher": "Yahoo Finance",
+      "title": "VIXY Historical Prices",
+      "url": "https://finance.yahoo.com/quote/VIXY/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — 35.43 / 35.64 / 34.90 / 35.13; Vol 1.36M"
+    },
+    {
+      "type": "price",
+      "ticker": "VIXM",
+      "publisher": "Stock Analysis",
+      "title": "VIXM Historical Data",
+      "url": "https://stockanalysis.com/etf/vixm/history/",
+      "date_accessed": "2025-08-27",
+      "excerpt": "Aug 25, 2025 — Open 16.11, High 16.24, Low 16.06, Close 16.20; Vol ~427.2K"
+    },
+    {
+      "type": "company_news",
+      "ticker": "RKLB",
+      "publisher": "Business Wire",
+      "title": "Rocket Lab Successfully Launches 70th Electron Mission",
+      "url": "https://www.businesswire.com/news/home/20250823588500/en/Rocket-Lab-Successfully-Launches-70th-Electron-Mission",
+      "published_at": "2025-08-23",
+      "stance": "positive",
+      "impact_direction": "Up",
+      "impact_confidence": 0.7,
+      "excerpt": "Electron #70 ('Live, Laugh, Launch') successfully deployed 5 satellites; cadence remains strong."
+    },
+    {
+      "type": "company_news",
+      "ticker": "RKLB",
+      "publisher": "Space.com",
+      "title": "Rocket Lab launches 5 satellites on 'Live, Laugh, Launch' — 70th Electron",
+      "url": "https://www.space.com/space-exploration/launches-spacecraft/rocket-lab-electron-five-satellites-mystery-mission-live-laugh-launch",
+      "published_at": "2025-08-23",
+      "stance": "positive",
+      "impact_direction": "Up",
+      "impact_confidence": 0.6,
+      "excerpt": "Confirms 70th Electron mission and payload deployment."
+    },
+    {
+      "type": "company_news",
+      "ticker": "OKLO",
+      "publisher": "Investing.com",
+      "title": "UBS initiates Oklo stock with Neutral rating, $65 PT",
+      "url": "https://www.investing.com/news/analyst-ratings/ubs-initiates-oklo-stock-with-neutral-rating-65-price-target-93CH-4201470",
+      "published_at": "2025-08-20",
+      "stance": "neutral",
+      "impact_direction": "Mixed",
+      "impact_confidence": 0.5,
+      "excerpt": "Coverage at Neutral; recognizes long runway but commercialization risks."
+    },
+    {
+      "type": "company_news",
+      "ticker": "OKLO",
+      "publisher": "Business Wire",
+      "title": "Oklo Signs MOU with ABB and Commissions Monitoring Room",
+      "url": "https://finance.yahoo.com/news/oklo-signs-mou-abb-commissions-120000302.html",
+      "published_at": "2025-08-21",
+      "stance": "positive",
+      "impact_direction": "Up",
+      "impact_confidence": 0.5,
+      "excerpt": "Training/ops readiness signals execution progress."
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Moderate", "reason": "SMR basket support + recent neutral/constructive coverage; no new negatives." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Large", "reason": "Momentum/PR from 70th Electron mission; sentiment tailwind." }
+    }
+  },
+  "totals": { "correct": 2, "incorrect": 0, "success_rate": 1.0 },
+  "notes": "Backfilled in v2.1 format. Predictions target Tue, Aug 26, 2025 and preserve your earlier magnitude calls (OKLO=Moderate, RKLB=Large)."
+}

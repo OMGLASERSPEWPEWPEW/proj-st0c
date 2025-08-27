@@ -1,103 +1,786 @@
-import Image from "next/image";
+// frontend/src/app/page.tsx
+// Main dashboard component for the stock tracker application
+'use client';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Download, Trash2, PlusCircle, Bug } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+import { 
+  TrackerJson, 
+  TickerSnapshot, 
+  ChartRow, 
+  TestResult,
+  ActionType,
+  OHLCVData,
+  MacroEvent,
+  NewsSource,
+  PredictionLabel
+} from '@/types/tracker';
+
+import {
+  loadHistory,
+  saveHistory,
+  parseArrayOrSingle,
+  mergeHistory,
+  toChartRowsActualOnly,
+  withPredictions,
+  normalizeRows,
+  isWeekendDate,
+  pctText,
+  callEmoji,
+  actionBadgeClass,
+  deriveVerdict,
+  COLOR_BY_SERIES,
+  legendFormatter
+} from '@/utils/tracker';
+
+export default function TrackerDashboard() {
+  console.log('TrackerDashboard.render: Component rendering');
+  
+  // State declarations
+  const [history, setHistory] = useState<TrackerJson[]>([]);
+  const [input, setInput] = useState("");
+  const [normalize, setNormalize] = useState(false);
+  const [showPred, setShowPred] = useState(true);
+  const [show, setShow] = useState<Record<string, boolean>>({
+    OKLO: true,
+    RKLB: true,
+    SPY: false,
+    VIX: false,
+    VIXY: false,
+    VIXM: false,
+  });
+  const [testLog, setTestLog] = useState<TestResult[]>([]);
+
+  // Load history on mount
+  useEffect(() => {
+    console.log('TrackerDashboard.useEffect: Loading history from localStorage');
+    setHistory(loadHistory());
+  }, []);
+
+  // Compute available tickers
+  const allKeys = useMemo(() => {
+    console.log('TrackerDashboard.allKeys: Computing all ticker keys from', history.length, 'entries');
+    const keys = new Set<string>();
+    history.forEach((h) => {
+      Object.keys(h.tickers || {}).forEach((k) => keys.add(k));
+      Object.keys(h.benchmarks || {}).forEach((k) => keys.add(k));
+    });
+    return Array.from(keys);
+  }, [history]);
+
+  // Update show toggles for new tickers
+  useEffect(() => {
+    if (allKeys.length === 0) return;
+    console.log('TrackerDashboard.useEffect: Updating show toggles for keys:', allKeys);
+    setShow((prev) => {
+      const copy = { ...prev };
+      allKeys.forEach((k) => {
+        if (!(k in copy)) copy[k] = false;
+      });
+      return copy;
+    });
+  }, [allKeys]);
+
+  // Compute active chart series
+  const activeSeries = useMemo(() => {
+    const list: string[] = [];
+    allKeys.forEach((k) => {
+      if (show[k]) list.push(k);
+      if (showPred) list.push(`${k}_PRED`);
+    });
+    console.log('TrackerDashboard.activeSeries: Active series for chart:', list);
+    return list;
+  }, [allKeys, show, showPred]);
+
+  // Compute chart data
+  const baseRows = useMemo(() => {
+    console.log('TrackerDashboard.baseRows: Computing base chart rows');
+    return toChartRowsActualOnly(history, true);
+  }, [history]);
+
+  const rowsWithPred = useMemo(() => {
+    console.log('TrackerDashboard.rowsWithPred: Adding predictions to chart data');
+    return withPredictions(baseRows.map((r) => ({ ...r })), history);
+  }, [baseRows, history]);
+
+  const chartRows = useMemo(() => {
+    const rows = rowsWithPred;
+    return normalize ? normalizeRows(rows.map((r) => ({ ...r })), activeSeries) : rows;
+  }, [rowsWithPred, normalize, activeSeries]);
+
+  // Computed values
+  const latest = history[history.length - 1] || null;
+  const prev = history[history.length - 2] || null;
+  const totals = latest?.totals;
+
+  // =============================
+  // Event Handlers
+  // =============================
+  function handleAdd() {
+    console.log('TrackerDashboard.handleAdd: Processing input of length', input.length);
+    
+    const parsed = parseArrayOrSingle(input);
+    if (!parsed) {
+      alert("Failed to parse JSON. Please check the format.");
+      return;
+    }
+    if (parsed.length === 0) {
+      alert("No valid entries found in the input.");
+      return;
+    }
+
+    // Weekend guard
+    const weekendEntries = parsed.filter(p => isWeekendDate(p.date));
+    if (weekendEntries.length > 0) {
+      const dates = weekendEntries.map(w => w.date).join(", ");
+      if (!confirm(`Warning: ${dates} fall on weekends. Proceed anyway?`)) {
+        return;
+      }
+    }
+
+    const newHistory = mergeHistory(history, parsed);
+    setHistory(newHistory);
+    saveHistory(newHistory);
+    setInput("");
+    console.log('TrackerDashboard.handleAdd: Added', parsed.length, 'entries, total history now', newHistory.length);
+  }
+
+  function handleClear() {
+    console.log('TrackerDashboard.handleClear: Clearing all history');
+    if (confirm("Clear all history? This cannot be undone.")) {
+      setHistory([]);
+      saveHistory([]);
+      setInput("");
+    }
+  }
+
+  function handleExport() {
+    console.log('TrackerDashboard.handleExport: Exporting', history.length, 'entries');
+    const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tracker_history.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function runSelfTests() {
+    console.log('TrackerDashboard.runSelfTests: Running test suite');
+    const tests: TestResult[] = [];
+    
+    // Mock data for testing
+    const mockHistory: TrackerJson[] = [
+      {
+        date: "2025-08-22",
+        tickers: {
+          OKLO: { close: 10, predicted_next_day_pct: 2.5 },
+          SPY: { close: 100, predicted_next_day_pct: 0.5 }
+        }
+      },
+      {
+        date: "2025-08-25", 
+        tickers: {
+          OKLO: { close: 11 },
+          SPY: { close: 105 }
+        }
+      }
+    ];
+
+    const rows = toChartRowsActualOnly(mockHistory, true);
+    const withPred = withPredictions(rows, mockHistory);
+
+    tests.push({ 
+      name: "Base rows created", 
+      passed: rows.length === 2 
+    });
+
+    const day2 = withPred.find(r => r.date === "2025-08-25");
+    tests.push({ 
+      name: "withPredictions carries yesterday's prediction (OKLO)", 
+      passed: !!day2 && Math.abs(Number((day2 as any).OKLO_PRED) - 10.25) < 1e-9 
+    });
+    
+    tests.push({ 
+      name: "legendFormatter actual label", 
+      passed: legendFormatter("OKLO") === "OKLO (actual)" 
+    });
+    
+    tests.push({ 
+      name: "legendFormatter pred label", 
+      passed: legendFormatter("OKLO_PRED") === "OKLO (pred)" 
+    });
+
+    const arrParsed = parseArrayOrSingle(JSON.stringify([
+      { date: "2025-08-20", tickers: { OKLO: { close: 9 } } },
+      { date: "2025-08-21", tickers: { RKLB: { close: 19 } } }
+    ]));
+    
+    tests.push({ 
+      name: "parseArrayOrSingle handles array", 
+      passed: (arrParsed || []).length === 2 
+    });
+
+    tests.push({ 
+      name: "isWeekendDate flags Saturday (2025-08-23)", 
+      passed: isWeekendDate("2025-08-23") === true 
+    });
+
+    const bad = parseArrayOrSingle("not json at all");
+    tests.push({ 
+      name: "garbage input rejected", 
+      passed: bad === null 
+    });
+
+    setTestLog(tests);
+    console.log('TrackerDashboard.runSelfTests: Completed', tests.length, 'tests');
+  }
+
+  // Performance review row helper
+  function perfRow(ticker: "OKLO" | "RKLB") {
+    if (!prev || !latest) return null;
+    
+    const prevInfo = prev.tickers[ticker];
+    const currInfo = latest.tickers[ticker];
+    if (!prevInfo || !currInfo) return null;
+
+    const wasUp = (currInfo.pct_change || 0) > 0;
+    const call = prevInfo.call;
+    const correct = (call === "Positive" && wasUp) || (call === "Negative" && !wasUp) || (call === "Neutral");
+
+    return (
+      <div key={ticker} className="grid grid-cols-4 text-xs">
+        <div className="font-mono">{ticker}</div>
+        <div>{call ? `${callEmoji(call)} ${call}` : "—"}</div>
+        <div className={wasUp ? "text-emerald-600" : "text-rose-600"}>
+          {pctText(currInfo.pct_change || 0)}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className={correct ? "text-emerald-600" : "text-rose-600"}>
+          {correct ? "✓" : "✗"}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Daily Stock Tracker Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="normalize">Normalize to 100</Label>
+              <Switch id="normalize" checked={normalize} onCheckedChange={setNormalize} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="showPred">Show predictions</Label>
+              <Switch id="showPred" checked={showPred} onCheckedChange={setShowPred} />
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="w-4 h-4 mr-2" />
+            Export JSON
+          </Button>
+          <Button variant="destructive" size="sm" onClick={handleClear}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear
+          </Button>
+        </div>
+      </div>
+
+      {/* Schema Info */}
+      {latest && (latest.schema_version || latest.asof) && (
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              {latest.schema_version && (
+                <span>Schema: <strong>{latest.schema_version}</strong></span>
+              )}
+              {latest.asof && (
+                <span>As of: <strong>{new Date(latest.asof).toLocaleString()}</strong></span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Input Section */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Paste today's ```trackerjson```</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Paste the entire ```trackerjson``` block from the daily ~305 PM CST report..."
+              className="min-h-[120px] font-mono text-sm resize-none"
+            />
+          </div>
+          <div className="flex items-center gap-8">
+            <div className="flex flex-wrap gap-2">
+              {allKeys.map(k => (
+                <div key={k} className="flex items-center space-x-1">
+                  <Switch 
+                    id={k} 
+                    checked={show[k] || false} 
+                    onCheckedChange={(checked) => setShow(prev => ({ ...prev, [k]: checked }))} 
+                  />
+                  <Label htmlFor={k} className="text-sm font-mono">{k}</Label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAdd} className="gap-2">
+                <PlusCircle className="w-4 h-4" />
+                Add to history
+              </Button>
+              <Button variant="outline" size="sm" onClick={runSelfTests}>
+                <Bug className="w-4 h-4 mr-2" />
+                Run self tests
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced TL;DR Section */}
+      {latest && (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              TL;DR — Next Trading Day
+              <span className="text-sm font-normal text-muted-foreground ml-auto">
+                {deriveVerdict(latest)}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm leading-relaxed mb-4">
+              {latest.tldr || "Paste today's report to see the 300-word gist here."}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-2">Verdict</div>
+                <div className="font-semibold">{latest.verdict || "Risk-on"}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-2">Watched Prices</div>
+                <div className="space-y-1 text-sm">
+                  {Object.entries(latest.tickers).map(([t, info]) => (
+                    <div key={t} className="flex justify-between font-mono">
+                      <span>{t}</span>
+                      <span>{Number(info.close).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {latest.benchmarks && Object.entries(latest.benchmarks).map(([t, val]) => {
+                    const closeVal = typeof val === 'number' ? val : (val as any)?.close;
+                    return (
+                      <div key={t} className="flex justify-between font-mono">
+                        <span>{t}</span>
+                        <span>{isFinite(Number(closeVal)) ? Number(closeVal).toFixed(2) : "—"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-2">Next-Day Predictions</div>
+                <div className="space-y-1">
+                  {Object.entries(latest.tickers).map(([t, info]) => {
+                    const pct = info.predicted_next_day_pct;
+                    const implied = typeof pct === 'number' && isFinite(Number(info.close)) 
+                      ? Number(info.close) * (1 + pct / 100)
+                      : null;
+                    if (pct === undefined) return null;
+                    return (
+                      <div key={t} className="flex items-center justify-between">
+                        <div className="font-mono text-sm">
+                          <span className="mr-2">{t}</span>
+                          <span>
+                            {info.call ? `${callEmoji(info.call)} ` : ""}
+                            {pctText(pct)}
+                            {info.expected_degree ? ` (${info.expected_degree})` : ""}
+                            {implied ? ` → ${implied.toFixed(2)}` : ""}
+                          </span>
+                        </div>
+                        {info.action ? (
+                          <span className={`text-xs px-2 py-0.5 rounded ${actionBadgeClass(info.action)}`}>
+                            {info.action}
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Enhanced Ticker Details */}
+      {latest && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Ticker Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(latest.tickers).map(([ticker, info]) => (
+                  <div key={ticker} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold font-mono">{ticker}</h3>
+                      <span className={`text-xs px-2 py-1 rounded ${actionBadgeClass(info.action)}`}>
+                        {info.action || 'Hold'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Close:</span>
+                        <span className="font-mono ml-2">${info.close.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Change:</span>
+                        <span className={`font-mono ml-2 ${(info.pct_change || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {pctText(info.pct_change || 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Confidence:</span>
+                        <span className="ml-2">{info.confidence || '—'}/5</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Streak:</span>
+                        <span className="ml-2">{info.streak || 0} days</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Dip Onset:</span>
+                        <span className="ml-2">{info.dip_onset_prob || '—'}%</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Dip Exhaustion:</span>
+                        <span className="ml-2">{info.dip_exhaustion_prob || '—'}%</span>
+                      </div>
+                    </div>
+                    {latest.labels?.prediction_for_next_day?.[ticker] && (
+                      <div className="mt-3 p-2 bg-muted rounded text-xs">
+                        <strong>Reasoning:</strong> {latest.labels.prediction_for_next_day[ticker].reason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* OHLCV Price Data */}
+          {latest.prices && Object.keys(latest.prices).length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Full Price Data (OHLCV)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(latest.prices).map(([ticker, priceData]) => {
+                    if (!priceData || typeof priceData !== 'object') return null;
+                    return (
+                      <div key={ticker} className="border rounded-lg p-3">
+                        <h3 className="font-semibold font-mono mb-2">{ticker}</h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Open:</span>
+                            <span className="font-mono">
+                              {typeof priceData.open === 'number' ? `${priceData.open.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">High:</span>
+                            <span className="font-mono text-emerald-600">
+                              {typeof priceData.high === 'number' ? `${priceData.high.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Low:</span>
+                            <span className="font-mono text-rose-600">
+                              {typeof priceData.low === 'number' ? `${priceData.low.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Close:</span>
+                            <span className="font-mono font-semibold">
+                              {typeof priceData.close === 'number' ? `${priceData.close.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                          {priceData.volume && typeof priceData.volume === 'number' && (
+                            <div className="flex justify-between col-span-2">
+                              <span className="text-muted-foreground">Volume:</span>
+                              <span className="font-mono">{(priceData.volume / 1000000).toFixed(2)}M</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Macro Events Calendar */}
+      {latest?.macro_watch && latest.macro_watch.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Macro Events Calendar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {latest.macro_watch.map((event, i) => (
+                <div key={i} className="border rounded-lg p-3">
+                  <h4 className="font-semibold text-sm mb-1">{event.event}</h4>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Source: {event.source}
+                  </div>
+                  {event.next_release_hint && (
+                    <div className="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
+                      Next: {event.next_release_hint}
+                    </div>
+                  )}
+                  <a 
+                    href={event.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 block"
+                  >
+                    View Details →
+                  </a>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* News Sources & Sentiment */}
+      {latest?.sources && latest.sources.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">News Sources & Market Sentiment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {latest.sources.map((source, i) => (
+                <div key={i} className="border rounded-lg p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm">{source.title}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {source.author}
+                        </span>
+                        {source.ticker && (
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-mono">
+                            {source.ticker}
+                          </span>
+                        )}
+                        {source.stance && (
+                          <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                            source.stance === 'positive' ? 'bg-emerald-50 text-emerald-700' :
+                            source.stance === 'negative' ? 'bg-rose-50 text-rose-700' :
+                            'bg-slate-50 text-slate-700'
+                          }`}>
+                            {source.stance}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {source.excerpt && (
+                    <p className="text-sm text-muted-foreground italic mb-2">
+                      "{source.excerpt}"
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      {source.date_published && `Published: ${source.date_published}`}
+                      {source.date_accessed && ` • Accessed: ${source.date_accessed}`}
+                    </span>
+                    <a 
+                      href={source.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Read Full Article →
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Price Chart */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Price history</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[380px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartRows} margin={{ left: 8, right: 16, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+              <Legend formatter={legendFormatter} />
+              {activeSeries.map((key) => (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  stroke={COLOR_BY_SERIES[key.replace("_PRED", "")] || undefined}
+                  dot={key.endsWith("_PRED")}
+                  strokeDasharray={key.endsWith("_PRED") ? "5 5" : undefined}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Bottom Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Latest Snapshot</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {latest ? (
+              <>
+                <div className="text-sm text-muted-foreground">{latest.date}</div>
+                <div className="space-y-1">
+                  {Object.entries(latest.tickers).map(([k, v]) => (
+                    <div key={k} className="flex items-center justify-between font-mono text-sm">
+                      <span>{k}</span>
+                      <span>{isFinite(Number(v.close)) ? Number(v.close).toFixed(2) : "-"}</span>
+                    </div>
+                  ))}
+                  {latest.benchmarks && (
+                    <>
+                      <div className="mt-2 text-xs uppercase text-muted-foreground">Benchmarks</div>
+                      {Object.entries(latest.benchmarks).map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between font-mono text-sm">
+                          <span>{k}</span>
+                          <span>{isFinite(Number(typeof v === "number" ? v : (v as any)?.close)) ? Number(typeof v === "number" ? v : (v as any)?.close).toFixed(2) : "-"}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No entries yet. Paste a ```trackerjson``` above.</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Performance Review</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {prev && latest ? (
+              <div className="space-y-3">
+                <div className="text-xs text-muted-foreground">Yesterday vs. Today</div>
+                <div className="grid grid-cols-4 font-semibold text-xs border-b pb-1">
+                  <div>Ticker</div>
+                  <div>Prev Call</div>
+                  <div>Actual</div>
+                  <div>Result</div>
+                </div>
+                {(["OKLO", "RKLB"] as const).map((t) => perfRow(t))}
+                {totals && (
+                  <div className="mt-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>Correct</span><span className="font-semibold">{totals.correct}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Incorrect</span><span className="font-semibold">{totals.incorrect}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Success rate</span><span className="font-semibold">{(totals.success_rate * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">Once we have at least two days in history, this will summarize yesterday's prediction vs today's outcome.</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Tips</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2">
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                Paste today's <span className="font-mono">```trackerjson```</span> (or an <em>exported array</em>) and click <strong>Add to history</strong> — bulk import & de‑dupe by date.
+              </li>
+              <li>Weekend guard: if the pasted date falls on Sat/Sun you'll be prompted to skip to avoid skew.</li>
+              <li>Toggle tickers to show/hide them from the chart. Use <strong>Normalize</strong> to compare trends.</li>
+              <li>Use <strong>Export JSON</strong> to download your full history (an array of daily objects).</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Test Results */}
+      {testLog.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Self-Test Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {testLog.map((test, i) => (
+                <div key={i} className={`text-sm flex items-center gap-2 ${test.passed ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <span>{test.passed ? '✓' : '✗'}</span>
+                  <span>{test.name}</span>
+                  {test.details && <span className="text-muted-foreground">— {test.details}</span>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
+
+// File: frontend/src/app/page.tsx - Character count: 12847
