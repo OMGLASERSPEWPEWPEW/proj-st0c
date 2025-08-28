@@ -60,10 +60,6 @@ export default function TrackerDashboard() {
   const [show, setShow] = useState<Record<string, boolean>>({
     OKLO: true,
     RKLB: true,
-    SPY: false,
-    VIX: false,
-    VIXY: false,
-    VIXM: false,
   });
   const [testLog, setTestLog] = useState<TestResult[]>([]);
 
@@ -79,7 +75,7 @@ export default function TrackerDashboard() {
     const keys = new Set<string>();
     history.forEach((h) => {
       Object.keys(h.tickers || {}).forEach((k) => keys.add(k));
-      Object.keys(h.benchmarks || {}).forEach((k) => keys.add(k));
+      // Remove this line: Object.keys(h.benchmarks || {}).forEach((k) => keys.add(k));
     });
     return Array.from(keys);
   }, [history]);
@@ -132,44 +128,61 @@ export default function TrackerDashboard() {
   // =============================
   // Event Handlers
   // =============================
-  async function handleLoadFromRaw() {
-    console.log('TrackerDashboard.handleLoadFromRaw: Loading JSON files from data/raw');
+useEffect(() => {
+  console.log('page.tsx.useEffect: Initial data load');
+  
+  // First load from localStorage
+  const savedHistory = loadHistory();
+  setHistory(savedHistory);
+  
+  // Then load from data/raw directory
+  loadFromDataRaw();
+}, []);
+
+// Auto-load all JSON files from data/raw directory
+async function loadFromDataRaw() {
+  console.log('page.tsx.loadFromDataRaw: Auto-loading JSON files from data/raw');
+  
+  try {
+    const response = await fetch('/api/data');
+    const result = await response.json();
     
-    try {
-      const response = await fetch('/api/data');
-      const result = await response.json();
-      
-      console.log('TrackerDashboard.handleLoadFromRaw: API response:', result);
-      
-      if (!result.success) {
-        alert(`Failed to load from data/raw: ${result.error}\nPath checked: ${result.path || 'unknown'}`);
-        return;
-      }
-      
-      if (!Array.isArray(result.data)) {
-        alert(`API returned invalid data format. Expected array, got: ${typeof result.data}`);
-        console.error('TrackerDashboard.handleLoadFromRaw: Invalid data format:', result.data);
-        return;
-      }
-      
-      if (result.data.length === 0) {
-        alert(`Found ${result.files_found || 0} JSON files but none had valid tracker data.`);
-        return;
-      }
-      
+    console.log('page.tsx.loadFromDataRaw: API response:', result);
+    
+    if (!result.success) {
+      console.error('page.tsx.loadFromDataRaw: Failed to load from data/raw:', result.error);
+      return;
+    }
+    
+    // Fix: Use 'entries' instead of 'data' (matching what API actually returns)
+    if (!Array.isArray(result.entries)) {
+      console.error('page.tsx.loadFromDataRaw: Invalid data format:', result);
+      return;
+    }
+    
+    if (result.entries.length === 0) {
+      console.log('page.tsx.loadFromDataRaw: No valid tracker data found in', result.totalFiles || 0, 'files');
+      return;
+    }
+    
+    // Get current history from state (need to use callback form since we're in useEffect)
+    setHistory(currentHistory => {
       // Merge with existing history
-      const newHistory = mergeHistory(history, result.data);
-      setHistory(newHistory);
+      const newHistory = mergeHistory(currentHistory, result.entries);
+      
+      // Save to localStorage
       saveHistory(newHistory);
       
-      alert(`Successfully loaded ${result.entries_loaded} entries from ${result.files_found} JSON files.`);
-      console.log('TrackerDashboard.handleLoadFromRaw: Loaded', result.entries_loaded, 'entries');
+      console.log('page.tsx.loadFromDataRaw: Loaded', result.totalEntries, 'entries from', result.totalFiles, 'files. Total history:', newHistory.length);
       
-    } catch (error) {
-      console.error('TrackerDashboard.handleLoadFromRaw: API call failed:', error);
-      alert('Failed to connect to API. Make sure the development server is running.');
-    }
+      return newHistory;
+    });
+    
+  } catch (error) {
+    console.error('page.tsx.loadFromDataRaw: API call failed:', error);
+    // Don't show alert on auto-load failure - just log it
   }
+}
 
   function handleAdd() {
     console.log('TrackerDashboard.handleAdd: Processing input of length', input.length);
