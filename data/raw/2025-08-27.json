@@ -1,0 +1,116 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-08-27",
+  "asof": "2025-08-27T15:05:00-05:00",
+  "verdict": "Neutral-to-cautiously bullish",
+  "tldr": "Markets retreated mildly with OKLO –1.47% to $73.22 and RKLB –3.01% to $46.68. SPY ticked down ~0.3%, while VIX rose ~2.3% to 14.95, signaling growing volatility. No major macro catalysts today. OKLO looks to be nearing dip exhaustion (Small bounce expected), so leaning Buy. RKLB needs stabilization—Hold bias.",
+  "tickers": {
+    "OKLO": {
+      "close": 73.22,
+      "pct_change": -1.47,
+      "streak": -1,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": false,
+      "predicted_next_day_pct": 0.5,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 60
+    },
+    "RKLB": {
+      "close": 46.68,
+      "pct_change": -3.01,
+      "streak": -1,
+      "call": "Neutral",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": false,
+      "predicted_next_day_pct": 1.5,
+      "expected_degree": "Moderate",
+      "action": "Hold",
+      "dip_onset_prob": 40,
+      "dip_exhaustion_prob": 50
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 646.61 },
+    "VIX": 14.95
+  },
+  "prices": {
+    "OKLO": { "open": 74.09, "high": 75.93, "low": 73.085, "close": 73.22 },
+    "RKLB": { "open": 47.71, "high": 50.85, "low": 47.02, "close": 46.68 },
+    "SPY":  { "open": 644.53, "high": 647.35, "low": 644.44, "close": 646.61 },
+    "VIX":  { "close": 14.95 }
+  },
+  "macro_watch": [
+    { "event": "Jobs / NFP", "source": "Calendar", "link": null },
+    { "event": "CPI", "source": "Calendar", "link": null },
+    { "event": "Core PCE", "source": "Calendar", "link": null },
+    { "event": "ISM Manufacturing", "source": "Calendar", "link": null },
+    { "event": "ISM Services", "source": "Calendar", "link": null },
+    { "event": "Retail Sales", "source": "Calendar", "link": null },
+    { "event": "PPI", "source": "Calendar", "link": null },
+    { "event": "Initial Claims", "source": "Calendar", "link": null },
+    { "event": "FOMC Minutes / Dots", "source": "Calendar", "link": null }
+  ],
+  "sources": [
+    {
+      "id": "turn0search32",
+      "type": "price",
+      "ticker": "OKLO",
+      "publisher": "Investing.com",
+      "title": "Oklo Inc Historical Data",
+      "url": "",
+      "date_accessed": "2025-08-27",
+      "stance": null,
+      "excerpt": "Aug 27, 2025 — O 74.31, …, C 73.22 (–1.47%)"
+    },
+    {
+      "id": "turn0search17",
+      "type": "price",
+      "ticker": "RKLB",
+      "publisher": "StockAnalysis.com",
+      "title": "RKLB Historical Data",
+      "url": "",
+      "date_accessed": "2025-08-27",
+      "stance": null,
+      "excerpt": "Aug 27, 2025 — O 48.68, …, C 46.68 (–3.01%)"
+    },
+    {
+      "id": "turn0finance2",
+      "type": "price",
+      "ticker": "SPY",
+      "publisher": "Finance Tool",
+      "title": "SPY Intraday Quote",
+      "url": "",
+      "date_accessed": "2025-08-27",
+      "stance": null,
+      "excerpt": "Price ~646.61 (intraday)"
+    },
+    {
+      "id": "turn0search19",
+      "type": "price",
+      "ticker": "VIX",
+      "publisher": "Investing.com",
+      "title": "VIX Historical Data",
+      "url": "",
+      "date_accessed": "2025-08-27",
+      "stance": null,
+      "excerpt": "Aug 27, 2025 — VIX close 14.95 (+2.26%)"
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Dip likely nearing support." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Moderate", "reason": "Bounce probable after sharp drop." }
+    }
+  },
+  "totals": {
+    "correct": 0,
+    "incorrect": 2,
+    "success_rate": 0
+  },
+  "notes": "Need to refine bias and better align technical signals with volatility cues."
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-08-28",
+  "asof": "2025-08-28T15:05:00-05:00",
+  "verdict": "Risk-on",
+  "tldr": "SPY closed at a record while VIX eased, a classically risk-on setup. OKLO surged ~6% after recent momentum; RKLB gained ~3% on steady cadence headlines. For tomorrow we keep a constructive market bias but split the single-name stance: OKLO looks short-term extended and vulnerable to a fade if headlines quiet; RKLB carries a mild follow-through edge. Sun-Tzu frame: when the field looks easy, prepare for indirect attacks—thin-liquidity pockets and headline drift can reverse euphoria quickly. Net: buy strength only with discipline; favor continuation in RKLB and a tactically patient hold in OKLO.",
+  "tickers": {
+    "OKLO": {
+      "close": 77.89,
+      "pct_change": 6.41,
+      "streak": 1,
+      "call": "Neutral",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": -0.6,
+      "expected_degree": "Small",
+      "action": "Hold",
+      "dip_onset_prob": 45,
+      "dip_exhaustion_prob": 35
+    },
+    "RKLB": {
+      "close": 47.61,
+      "pct_change": 3.16,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 0.8,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 25,
+      "dip_exhaustion_prob": 50
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 648.92, "predicted_next_day_pct": 0.3 },
+    "VIX": 14.43
+  },
+  "prices": {
+    "OKLO": { "open": 74.34, "high": 79.78, "low": 74.08, "close": 77.89 },
+    "RKLB": { "open": 46.67, "high": 47.95, "low": 45.92, "close": 47.61 },
+    "SPY":  { "open": 647.34, "high": 649.61, "low": 646.03, "close": 648.92 },
+    "VIX":  { "open": 14.42, "high": 14.69, "low": 14.12, "close": 14.43 }
+  },
+  "macro_watch": [
+    { "event": "Core PCE Price Index", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-905", "next_release_hint": "Fri 08:30 ET" },
+    { "event": "Initial Jobless Claims", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/" },
+    { "event": "Nonfarm Payrolls (Jobs Report)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/nonfarm-payrolls-227" },
+    { "event": "CPI (YoY/MoM)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/cpi-733" },
+    { "event": "ISM Manufacturing PMI", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173" },
+    { "event": "ISM Services PMI", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176" },
+    { "event": "Retail Sales", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-retail-sales-63" },
+    { "event": "PPI", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ppi-734" },
+    { "event": "FOMC/Minutes/Rate Decision", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/" }
+  ],
+  "sources": [
+    { "id": "px_oklo_yf_2025-08-28", "type": "price", "ticker": "OKLO", "publisher": "Yahoo Finance", "title": "Oklo Inc (OKLO) summary & historical", "url": "https://finance.yahoo.com/quote/OKLO/history/", "date_accessed": "2025-08-28", "excerpt": "Aug 28, 2025: O 74.34 H 79.78 L 74.08 C 77.89" },
+    { "id": "px_oklo_nasdaq_2025-08-27", "type": "price", "ticker": "OKLO", "publisher": "Nasdaq", "title": "OKLO historical quotes", "url": "https://www.nasdaq.com/market-activity/stocks/oklo/historical", "date_accessed": "2025-08-28", "excerpt": "Aug 27, 2025 close 73.20" },
+    { "id": "px_rklb_yf_2025-08-28", "type": "price", "ticker": "RKLB", "publisher": "Yahoo Finance", "title": "Rocket Lab USA Inc (RKLB) Historical Data", "url": "https://finance.yahoo.com/quote/RKLB/history/", "date_accessed": "2025-08-28", "excerpt": "Aug 28, 2025: O 46.67 H 47.95 L 45.92 C 47.61" },
+    { "id": "px_spy_sa_2025-08-28", "type": "price", "ticker": "SPY", "publisher": "StockAnalysis", "title": "SPY Historical Data", "url": "https://stockanalysis.com/etf/spy/history/", "date_accessed": "2025-08-28", "excerpt": "Aug 28, 2025: O 647.34 H 649.61 L 646.03 C 648.92" },
+    { "id": "px_vix_inv_2025-08-28", "type": "price", "ticker": "VIX", "publisher": "Investing.com", "title": "CBOE Volatility Index (VIX) Historical", "url": "https://www.investing.com/indices/volatility-s-p-500-historical-data", "date_accessed": "2025-08-28", "excerpt": "Aug 28, 2025: Price 14.43, Open 14.42, High 14.69, Low 14.12, Change -2.83%" },
+    { "id": "news_oklo_mf_2025-08-27", "type": "company_news", "ticker": "OKLO", "publisher": "The Motley Fool", "author": "news staff", "title": "Why Oklo Stock Is Spiking Higher Today", "url": "https://www.fool.com/investing/2025/08/27/why-oklo-stock-is-spiking-higher-today/", "published_at": "2025-08-27", "stance": "positive", "excerpt": "Notes retail momentum after prior weakness; upbeat sentiment." },
+    { "id": "news_rklb_complex3_2025-08-28", "type": "company_news", "ticker": "RKLB", "publisher": "StockTitan (press wire)", "title": "Rocket Lab opens Launch Complex 3 at Mid-Atlantic Regional Spaceport", "url": "https://www.stocktitan.net/news/RKLB/rocket-lab-opens-launch-complex-3-at-the-mid-atlantic-regional-bo0z8b.html", "published_at": "2025-08-28", "stance": "positive", "excerpt": "Facility opening supports cadence; operational milestone." },
+    { "id": "macro_pce_inv_2025-08-29", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "Investing.com", "title": "Core PCE Price Index", "url": "https://www.investing.com/economic-calendar/core-pce-price-index-905", "date_accessed": "2025-08-28", "excerpt": "Core PCE due Fri 08:30 ET; key for rates path." },
+    { "id": "macro_calendar_inv_2025-08-28", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "Investing.com", "title": "Economic Calendar", "url": "https://www.investing.com/economic-calendar/", "date_accessed": "2025-08-28", "excerpt": "Initial Claims cadence, upcoming ISM/CPI, FOMC windows." }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Down", "magnitude_bucket": "Small", "reason": "Short-term extension vs range; risk of headline lull/mean reversion." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Cadence/ops headlines support marginal continuation." }
+    }
+  },
+  "totals": { "correct": 0, "incorrect": 0, "success_rate": 0.0 },
+  "notes": "Market open day. SPY record context; VIX softer. Next-day predictions sized small due to headline sensitivity."
+}
