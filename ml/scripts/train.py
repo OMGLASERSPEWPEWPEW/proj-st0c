@@ -7,12 +7,11 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from ml.src.model import build_model # Import our model builder
+from joblib import dump
 
 # --- Configuration ---
 # How many past days of data to use for predicting the next day.
 TIMESTEPS = 3 
-# Which stock and feature we want to predict.
-TARGET_TICKER = 'OKLO'
 TARGET_FEATURE = 'predicted_next_day_pct'
 
 def load_and_preprocess_data(file_path: str):
@@ -41,7 +40,7 @@ def create_sequences(data, target_col_index, timesteps):
         y.append(data[i + timesteps, target_col_index])
     return np.array(X), np.array(y)
 
-def main():
+def main(target_ticker: str):
     """Main function to run the training process."""
     # --- Paths ---
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -58,7 +57,7 @@ def main():
     scaled_data = scaler.fit_transform(df)
     
     # --- Create Sequences ---
-    target_column_name = f'{TARGET_TICKER}_{TARGET_FEATURE}'
+    target_column_name = f'{target_ticker}_{TARGET_FEATURE}'
     target_col_index = df.columns.get_loc(target_column_name)
     
     X, y = create_sequences(scaled_data, target_col_index, TIMESTEPS)
@@ -88,16 +87,28 @@ def main():
         verbose=1
     )
     
-    # --- Save Model ---
-    model_save_path = os.path.join(MODEL_OUTPUT_DIR, f'rnn_model_{TARGET_TICKER.lower()}_v1.h5')
+    # --- Save Model & Scaler ---
+    model_save_path = os.path.join(MODEL_OUTPUT_DIR, f'rnn_model_{target_ticker.lower()}_v1.h5')
     model.save(model_save_path)
+    
+    # ADD THESE LINES TO SAVE THE SCALER
+    
+    scaler_save_path = os.path.join(MODEL_OUTPUT_DIR, 'scaler.gz')
+    dump(scaler, scaler_save_path)
     
     print("\n" + "="*50)
     print("train.main: Training complete!")
     print(f"train.main: Model saved to: {model_save_path}")
+    print(f"train.main: Scaler saved to: {scaler_save_path}") # ADD THIS LINE
     print("="*50 + "\n")
 
 if __name__ == "__main__":
-    main()
+    # --- ADD ARGUMENT PARSING ---
+    import argparse
+    parser = argparse.ArgumentParser(description="Train RNN model for a specific ticker.")
+    parser.add_argument("ticker", type=str, help="The stock ticker to train (e.g., OKLO).")
+    args = parser.parse_args()
+    
+    main(args.ticker.upper()) # Pass ticker to main
 
 # File: ml/scripts/train.py - Character count: 3951
