@@ -19,6 +19,7 @@ export type TickerSnapshot = {
   abs_error_pct?: number;
   daily_pnl?: number;
   quality_score?: number;
+  
 };
 
 // Benchmarks can be a plain number (close) or an object with close + prediction
@@ -92,6 +93,7 @@ export type TrackerJson = {
     } | null;
   };
   notes?: string;
+  
 };
 
 export type ChartRow = {

@@ -53,6 +53,9 @@ import {
 
 export default function TrackerDashboard() {
   console.log('TrackerDashboard.render: Component rendering');
+  const [mlPredictions, setMlPredictions] = useState<Record<string, number> | null>(null);
+  const [isLoadingMlPredictions, setIsLoadingMlPredictions] = useState(true);
+  const [isPipelineRunning, setIsPipelineRunning] = useState(false);
   
   // State declarations
   const [history, setHistory] = useState<TrackerJson[]>([]);
@@ -65,6 +68,29 @@ export default function TrackerDashboard() {
   });
   const [testLog, setTestLog] = useState<TestResult[]>([]);
 
+  // Fetch ML predictions on mount
+  useEffect(() => {
+    // We can remove the console.log statements now
+    setIsLoadingMlPredictions(true);
+    fetch('/latest_ml_predictions.json', { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) { // Handle cases where the file might not be found
+          throw new Error('Network response was not ok');
+        }
+        return res.json();
+      })
+      .then(data => {
+        setMlPredictions(data.ml_predictions);
+      })
+      .catch(err => {
+        console.error("Failed to load ML predictions:", err);
+        setMlPredictions(null); // Clear out old predictions on failure
+      })
+      .finally(() => {
+        setIsLoadingMlPredictions(false); // <-- ADD THIS
+      });
+  }, []);
+
   // Load history on mount
   useEffect(() => {
     console.log('TrackerDashboard.useEffect: Loading history from localStorage');
@@ -72,6 +98,19 @@ export default function TrackerDashboard() {
     const historyWithMetrics = computePhase1Metrics(loadedHistory);
     setHistory(historyWithMetrics);
   }, []);
+
+  async function handleRunPipeline() {
+    setIsPipelineRunning(true);
+    alert("Kicking off the ML pipeline. This can take a few minutes. The predictions will update here automatically when it's done. You don't need to refresh.");
+    
+    // Call our new API endpoint
+    await fetch('/api/run-pipeline', { method: 'POST' });
+
+    // We can set a timeout to re-enable the button after a while
+    setTimeout(() => {
+      setIsPipelineRunning(false);
+    }, 60000); // Re-enable after 1 minute
+  }
 
   // Compute available tickers
   const allKeys = useMemo(() => {
@@ -663,6 +702,44 @@ async function loadFromDataRaw() {
         </Card>
       )}
 
+       {/* ML Model Forecasts Card */}
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">ML Model Forecasts</CardTitle>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleRunPipeline}
+            disabled={isPipelineRunning}
+          >
+            {isPipelineRunning ? 'Pipeline Running...' : 'Re-run Pipeline'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoadingMlPredictions ? (
+            <div className="text-sm text-muted-foreground">Loading latest predictions...</div>
+          ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 text-xs text-muted-foreground">
+                <div>Ticker</div>
+                <div className="text-right">Predicted Change</div>
+              </div>
+              {Object.entries(mlPredictions).map(([ticker, prediction]) => (
+                <div key={ticker} className="grid grid-cols-2 font-mono">
+                  <div>{ticker}</div>
+                  <div className={`text-right font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {pctText(prediction)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              No predictions available. The pipeline may be running in the background. Please refresh in a moment.
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
 
       {/* Enhanced Ticker Details */}
