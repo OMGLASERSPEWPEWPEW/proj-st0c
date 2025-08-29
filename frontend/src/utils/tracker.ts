@@ -313,4 +313,221 @@ export function legendFormatter(value: string): string {
   return `${value} (actual)`;
 }
 
+// =============================
+// Phase 1 Evaluation Functions
+// =============================
+
+const FLAT_THRESHOLD = 0.15; // 0.15% threshold for "flat" moves
+const TRANSACTION_COST_BPS = 20; // 20 basis points (0.2%) transaction cost
+const BASE_POSITION_SIZE = 1000; // $1000 per trade
+
+export function calculateDailyMetrics(
+  predicted: number, 
+  actual: number, 
+  call?: "Positive" | "Neutral" | "Negative"
+): { abs_error_pct: number; daily_pnl: number; quality_score: number; direction_correct: boolean } {
+  
+  const absError = Math.abs(predicted - actual);
+  const directionCorrect = isDirectionCorrect(predicted, actual, call);
+  
+  // Simulate P&L: if we followed the prediction
+  let dailyPnL = 0;
+  if (Math.abs(predicted) > FLAT_THRESHOLD) { // Only trade if prediction is meaningful
+    const predictedReturn = predicted / 100; // convert to decimal
+    const actualReturn = actual / 100;
+    const direction = predicted > 0 ? 1 : -1; // 1 for long, -1 for short
+    
+    // P&L = position_size * direction * actual_return - transaction_costs
+    const grossPnL = BASE_POSITION_SIZE * direction * actualReturn;
+    const transactionCost = BASE_POSITION_SIZE * (TRANSACTION_COST_BPS / 10000);
+    dailyPnL = grossPnL - transactionCost;
+  }
+  
+  // Quality Score (0-100): 40% direction + 40% magnitude accuracy + 20% confidence bonus
+  const directionScore = directionCorrect ? 40 : 0;
+  const magnitudeScore = Math.max(0, 40 * (1 - absError / 10)); // Cap error at 10% for scoring
+  const confidenceBonus = (Math.abs(predicted) > 2) ? 20 : 10; // Bonus for conviction
+  
+  const qualityScore = Math.min(100, directionScore + magnitudeScore + confidenceBonus);
+  
+  return {
+    abs_error_pct: absError,
+    daily_pnl: dailyPnL,
+    quality_score: qualityScore,
+    direction_correct: directionCorrect
+  };
+}
+
+export function isDirectionCorrect(
+  predicted: number, 
+  actual: number, 
+  call?: "Positive" | "Neutral" | "Negative"
+): boolean {
+  const actualIsUp = actual > FLAT_THRESHOLD;
+  const actualIsDown = actual < -FLAT_THRESHOLD;
+  const actualIsFlat = Math.abs(actual) <= FLAT_THRESHOLD;
+  
+  const predictedIsUp = predicted > FLAT_THRESHOLD;
+  const predictedIsDown = predicted < -FLAT_THRESHOLD;
+  
+  // Use call if available, otherwise use predicted direction
+  if (call === "Positive") return actualIsUp;
+  if (call === "Negative") return actualIsDown; 
+  if (call === "Neutral") return actualIsFlat;
+  
+  // Fallback to predicted direction
+  if (predictedIsUp) return actualIsUp;
+  if (predictedIsDown) return actualIsDown;
+  return actualIsFlat; // predicted flat
+}
+
+export function calculateRunningMetrics(history: TrackerJson[]): {
+  total_pnl: number;
+  avg_abs_error: number;
+  avg_quality_score: number;
+  hit_rate: number;
+  trade_count: number;
+  best_call: { ticker: string; date: string; pnl: number } | null;
+  worst_call: { ticker: string; date: string; pnl: number } | null;
+} {
+  let totalPnL = 0;
+  let totalAbsError = 0;
+  let totalQualityScore = 0;
+  let correctCount = 0;
+  let totalCount = 0;
+  let bestCall: { ticker: string; date: string; pnl: number } | null = null;
+  let worstCall: { ticker: string; date: string; pnl: number } | null = null;
+  
+  history.forEach(entry => {
+    Object.entries(entry.tickers).forEach(([ticker, info]) => {
+      if (typeof info.predicted_next_day_pct === 'number' && 
+          typeof info.pct_change === 'number' &&
+          info.abs_error_pct !== undefined &&
+          info.daily_pnl !== undefined &&
+          info.quality_score !== undefined) {
+        
+        totalPnL += info.daily_pnl;
+        totalAbsError += info.abs_error_pct;
+        totalQualityScore += info.quality_score;
+        totalCount++;
+        
+        if (info.correct === true) correctCount++;
+        
+        // Track best/worst calls
+        if (!bestCall || info.daily_pnl > bestCall.pnl) {
+          bestCall = { ticker, date: entry.date, pnl: info.daily_pnl };
+        }
+        if (!worstCall || info.daily_pnl < worstCall.pnl) {
+          worstCall = { ticker, date: entry.date, pnl: info.daily_pnl };
+        }
+      }
+    });
+  });
+  
+  return {
+    total_pnl: totalPnL,
+    avg_abs_error: totalCount > 0 ? totalAbsError / totalCount : 0,
+    avg_quality_score: totalCount > 0 ? totalQualityScore / totalCount : 0,
+    hit_rate: totalCount > 0 ? correctCount / totalCount : 0,
+    trade_count: totalCount,
+    best_call: bestCall,
+    worst_call: worstCall
+  };
+}
+
+// Calculate metrics for a specific day's entries
+export function calculateDayMetrics(entry: TrackerJson): {
+  day_pnl: number;
+  day_trades: number;
+  day_hits: number;
+  day_avg_quality: number;
+  day_avg_error: number;
+} {
+  let dayPnL = 0;
+  let dayTrades = 0;
+  let dayHits = 0;
+  let totalQuality = 0;
+  let totalError = 0;
+  
+  Object.values(entry.tickers).forEach(info => {
+    if (typeof info.daily_pnl === 'number' && 
+        typeof info.quality_score === 'number' &&
+        typeof info.abs_error_pct === 'number') {
+      dayPnL += info.daily_pnl;
+      totalQuality += info.quality_score;
+      totalError += info.abs_error_pct;
+      dayTrades++;
+      if (info.correct === true) dayHits++;
+    }
+  });
+  
+  return {
+    day_pnl: dayPnL,
+    day_trades: dayTrades,
+    day_hits: dayHits,
+    day_avg_quality: dayTrades > 0 ? totalQuality / dayTrades : 0,
+    day_avg_error: dayTrades > 0 ? totalError / dayTrades : 0
+  };
+}
+
+export function computePhase1Metrics(history: TrackerJson[]): TrackerJson[] {
+  console.log('tracker.computePhase1Metrics: Computing Phase 1 metrics for', history.length, 'entries');
+  
+  const updated = history.map((entry, index) => {
+    if (index === 0) return entry; // Skip first entry (no previous day)
+    
+    const prevEntry = history[index - 1];
+    const updatedTickers = { ...entry.tickers };
+    
+    // For each ticker, compute metrics based on yesterday's prediction vs today's actual
+    Object.keys(updatedTickers).forEach(ticker => {
+      const prevInfo = prevEntry.tickers[ticker];
+      const currentInfo = updatedTickers[ticker];
+      
+      if (prevInfo && currentInfo && 
+          typeof prevInfo.predicted_next_day_pct === 'number' &&
+          typeof currentInfo.pct_change === 'number') {
+        
+        const metrics = calculateDailyMetrics(
+          prevInfo.predicted_next_day_pct,
+          currentInfo.pct_change,
+          prevInfo.call
+        );
+        
+        updatedTickers[ticker] = {
+          ...currentInfo,
+          abs_error_pct: metrics.abs_error_pct,
+          daily_pnl: metrics.daily_pnl,
+          quality_score: metrics.quality_score,
+          correct: metrics.direction_correct
+        };
+      }
+    });
+    
+    return { ...entry, tickers: updatedTickers };
+  });
+  
+  // Update totals with running metrics
+  const runningMetrics = calculateRunningMetrics(updated);
+  const latest = updated[updated.length - 1];
+  if (latest) {
+    updated[updated.length - 1] = {
+      ...latest,
+      totals: {
+        correct: Math.round(runningMetrics.hit_rate * runningMetrics.trade_count),
+        incorrect: runningMetrics.trade_count - Math.round(runningMetrics.hit_rate * runningMetrics.trade_count),
+        success_rate: runningMetrics.hit_rate,
+        total_pnl: runningMetrics.total_pnl,
+        avg_abs_error: runningMetrics.avg_abs_error,
+        avg_quality_score: runningMetrics.avg_quality_score,
+        trade_count: runningMetrics.trade_count,
+        best_call: runningMetrics.best_call,
+        worst_call: runningMetrics.worst_call
+      }
+    };
+  }
+  
+  return updated;
+}
+
 // File: frontend/src/utils/tracker.ts - Character count: 4088

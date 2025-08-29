@@ -11,12 +11,14 @@ export type TickerSnapshot = {
   confidence?: number;
   actual_move?: "Up" | "Down" | "Flat" | null;
   correct?: boolean | null;
-  // Optional fields for TL;DR + actions
-  predicted_next_day_pct?: number; // signed percent (+/-)
+  predicted_next_day_pct?: number;
   expected_degree?: "Small" | "Moderate" | "Large";
   action?: ActionType;
-  dip_onset_prob?: number; // 0-100
-  dip_exhaustion_prob?: number; // 0-100
+  dip_onset_prob?: number;
+  dip_exhaustion_prob?: number;
+  abs_error_pct?: number;
+  daily_pnl?: number;
+  quality_score?: number;
 };
 
 // Benchmarks can be a plain number (close) or an object with close + prediction
@@ -70,7 +72,25 @@ export type TrackerJson = {
   labels?: {
     prediction_for_next_day?: Record<string, PredictionLabel>;
   };
-  totals?: { correct: number; incorrect: number; success_rate: number };
+  totals?: {
+    correct: number;
+    incorrect: number;
+    success_rate: number;
+    total_pnl?: number;
+    avg_abs_error?: number;
+    avg_quality_score?: number;
+    trade_count?: number;
+    best_call?: {
+      ticker: string;
+      date: string;
+      pnl: number;
+    } | null;
+    worst_call?: {
+      ticker: string;
+      date: string;
+      pnl: number;
+    } | null;
+  };
   notes?: string;
 };
 
@@ -84,5 +104,7 @@ export type TestResult = {
   passed: boolean;
   details?: string;
 };
+
+
 
 // File: frontend/src/types/tracker.ts - Character count: 1428

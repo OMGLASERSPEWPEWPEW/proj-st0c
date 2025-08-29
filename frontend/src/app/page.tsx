@@ -46,7 +46,9 @@ import {
   actionBadgeClass,
   deriveVerdict,
   COLOR_BY_SERIES,
-  legendFormatter
+  legendFormatter,
+  computePhase1Metrics,
+  calculateDayMetrics  
 } from '@/utils/tracker';
 
 export default function TrackerDashboard() {
@@ -66,7 +68,9 @@ export default function TrackerDashboard() {
   // Load history on mount
   useEffect(() => {
     console.log('TrackerDashboard.useEffect: Loading history from localStorage');
-    setHistory(loadHistory());
+    const loadedHistory = loadHistory();
+    const historyWithMetrics = computePhase1Metrics(loadedHistory);
+    setHistory(historyWithMetrics);
   }, []);
 
   // Compute available tickers
@@ -97,8 +101,10 @@ export default function TrackerDashboard() {
   const activeSeries = useMemo(() => {
     const list: string[] = [];
     allKeys.forEach((k) => {
-      if (show[k]) list.push(k);
-      if (showPred) list.push(`${k}_PRED`);
+      if (show[k]) {
+        list.push(k);
+        if (showPred) list.push(`${k}_PRED`); // Only add prediction if base stock is shown
+      }
     });
     console.log('TrackerDashboard.activeSeries: Active series for chart:', list);
     return list;
@@ -119,6 +125,57 @@ export default function TrackerDashboard() {
     const rows = rowsWithPred;
     return normalize ? normalizeRows(rows.map((r) => ({ ...r })), activeSeries) : rows;
   }, [rowsWithPred, normalize, activeSeries]);
+
+  // Compute dynamic Y-axis domain based on visible data
+  const yAxisDomain = useMemo(() => {
+    console.log('TrackerDashboard.yAxisDomain: Computing dynamic Y-axis domain for visible series');
+    
+    if (chartRows.length === 0 || activeSeries.length === 0) {
+      return [0, 100]; // fallback
+    }
+
+    let min = Infinity;
+    let max = -Infinity;
+
+    // Only consider active series for domain calculation
+    const activeDataSeries = activeSeries.filter(key => !key.endsWith('_PRED')); // Focus on actual data for primary scaling
+    
+    if (activeDataSeries.length === 0) {
+      return [0, 100]; // fallback when only predictions are shown
+    }
+
+    chartRows.forEach(row => {
+      activeDataSeries.forEach(seriesKey => {
+        const value = row[seriesKey];
+        if (typeof value === 'number' && isFinite(value)) {
+          min = Math.min(min, value);
+          max = Math.max(max, value);
+        }
+      });
+    });
+
+    // Handle edge cases
+    if (!isFinite(min) || !isFinite(max) || min === max) {
+      return [0, 100];
+    }
+
+    // FAANG-level smart padding: 5% padding with minimum 2-point spread
+    const range = max - min;
+    const paddingPercent = 0.05; // 5% padding
+    const minSpread = Math.max(2, range * 0.1); // Ensure at least 10% spread or 2 points
+    
+    const finalMin = min - Math.max(range * paddingPercent, minSpread * 0.5);
+    const finalMax = max + Math.max(range * paddingPercent, minSpread * 0.5);
+
+    console.log('TrackerDashboard.yAxisDomain: Calculated domain', { 
+      originalRange: [min, max], 
+      finalRange: [finalMin, finalMax],
+      activeSeries: activeDataSeries 
+    });
+
+    return [Math.max(0, finalMin), finalMax]; // Never go below 0 for stock prices
+  }, [chartRows, activeSeries]);
+
 
   // Computed values
   const latest = history[history.length - 1] || null;
@@ -170,12 +227,15 @@ async function loadFromDataRaw() {
       // Merge with existing history
       const newHistory = mergeHistory(currentHistory, result.entries);
       
+      // Compute Phase 1 metrics before saving
+      const historyWithMetrics = computePhase1Metrics(newHistory);
+      
       // Save to localStorage
-      saveHistory(newHistory);
+      saveHistory(historyWithMetrics);
       
-      console.log('page.tsx.loadFromDataRaw: Loaded', result.totalEntries, 'entries from', result.totalFiles, 'files. Total history:', newHistory.length);
+      console.log('page.tsx.loadFromDataRaw: Loaded', result.totalEntries, 'entries from', result.totalFiles, 'files. Total history:', historyWithMetrics.length);
       
-      return newHistory;
+      return historyWithMetrics;  // Return the version with metrics
     });
     
   } catch (error) {
@@ -207,10 +267,11 @@ async function loadFromDataRaw() {
     }
 
     const newHistory = mergeHistory(history, parsed);
-    setHistory(newHistory);
-    saveHistory(newHistory);
+    const historyWithMetrics = computePhase1Metrics(newHistory);  // Add this line
+    setHistory(historyWithMetrics);
+    saveHistory(historyWithMetrics);  // Save the metrics too
     setInput("");
-    console.log('TrackerDashboard.handleAdd: Added', parsed.length, 'entries, total history now', newHistory.length);
+    console.log('TrackerDashboard.handleAdd: Added', parsed.length, 'entries, total history now', historyWithMetrics.length);
   }
 
   function handleClear() {
@@ -304,6 +365,8 @@ async function loadFromDataRaw() {
     console.log('TrackerDashboard.runSelfTests: Completed', tests.length, 'tests');
   }
 
+  
+
   // Performance review row helper
   function perfRow(ticker: "OKLO" | "RKLB") {
     if (!prev || !latest) return null;
@@ -382,7 +445,11 @@ async function loadFromDataRaw() {
             <LineChart data={chartRows} margin={{ left: 8, right: 16, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis 
+                tick={{ fontSize: 12 }} 
+                domain={yAxisDomain}
+                tickFormatter={(value) => `$${value.toFixed(1)}`}
+              />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} />
               <Legend formatter={legendFormatter} />
               {activeSeries.map((key) => (
@@ -401,6 +468,124 @@ async function loadFromDataRaw() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Stock Toggle Controls */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Stock Toggle Controls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {allKeys.map((ticker) => (
+              <div key={ticker} className="flex items-center space-x-2">
+                <Switch
+                  id={`toggle-${ticker}`}
+                  checked={show[ticker] || false}
+                  onCheckedChange={(checked) => {
+                    console.log(`TrackerDashboard.toggle: Toggling ${ticker} to ${checked}`);
+                    setShow(prev => ({ ...prev, [ticker]: checked }));
+                  }}
+                />
+                <Label 
+                  htmlFor={`toggle-${ticker}`} 
+                  className={`font-mono text-sm cursor-pointer ${
+                    show[ticker] ? 'text-foreground font-semibold' : 'text-muted-foreground'
+                  }`}
+                  style={{ 
+                    color: show[ticker] && COLOR_BY_SERIES[ticker] 
+                      ? COLOR_BY_SERIES[ticker] 
+                      : undefined 
+                  }}
+                >
+                  {ticker}
+                </Label>
+              </div>
+            ))}
+          </div>
+          {allKeys.length > 0 && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log('TrackerDashboard.toggleAll: Enabling all stocks');
+                  const allOn = Object.fromEntries(allKeys.map(k => [k, true]));
+                  setShow(prev => ({ ...prev, ...allOn }));
+                }}
+              >
+                Show All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log('TrackerDashboard.toggleAll: Disabling all stocks');
+                  const allOff = Object.fromEntries(allKeys.map(k => [k, false]));
+                  setShow(prev => ({ ...prev, ...allOff }));
+                }}
+              >
+                Hide All
+              </Button>
+              <div className="ml-auto text-sm text-muted-foreground">
+                {activeSeries.filter(s => !s.endsWith('_PRED')).length} of {allKeys.length} visible
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {prev && latest ? (
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground">Yesterday vs. Today</div>
+          <div className="grid grid-cols-5 font-semibold text-xs border-b pb-1">
+            <div>Ticker</div>
+            <div>Call</div>
+            <div>Actual</div>
+            <div>Result</div>
+            <div>P&L</div>
+          </div>
+          {(["OKLO", "RKLB"] as const).map((t) => {
+            const prevInfo = prev.tickers[t];
+            const currInfo = latest.tickers[t];
+            if (!prevInfo || !currInfo) return null;
+
+            const wasUp = (currInfo.pct_change || 0) > 0;
+            const call = prevInfo.call;
+            const correct = currInfo.correct;
+            const pnl = currInfo.daily_pnl;
+
+            return (
+              <div key={t} className="grid grid-cols-5 text-xs items-center">
+                <div className="font-mono">{t}</div>
+                <div>{call ? `${callEmoji(call)} ${call}` : "—"}</div>
+                <div className={wasUp ? "text-emerald-600" : "text-rose-600"}>
+                  {pctText(currInfo.pct_change || 0)}
+                </div>
+                <div className={correct ? "text-emerald-600" : "text-rose-600"}>
+                  {correct ? "✓" : "✗"} {currInfo.quality_score?.toFixed(0)}/100
+                </div>
+                <div className={`font-bold ${(pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {pnl ? `$${pnl.toFixed(0)}` : "—"}
+                </div>
+              </div>
+            );
+          })}
+          {/* Running totals */}
+          <div className="mt-3 text-sm border-t pt-3">
+            <div className="flex items-center justify-between">
+              <span>Hit Rate</span><span className="font-semibold">{((latest.totals?.success_rate || 0) * 100).toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Total P&L</span>
+              <span className={`font-semibold ${(latest.totals?.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                ${(latest.totals?.total_pnl || 0).toFixed(0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground">Performance metrics will appear after we have consecutive days of data.</div>
+      )}
 
       {/* Enhanced TL;DR Section */}
       {latest && (
@@ -477,6 +662,8 @@ async function loadFromDataRaw() {
           </CardContent>
         </Card>
       )}
+
+      
 
       {/* Enhanced Ticker Details */}
       {latest && (
@@ -586,46 +773,165 @@ async function loadFromDataRaw() {
         </div>
       )}
 
-
+      
      
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Performance Review</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {prev && latest ? (
-              <div className="space-y-3">
-                <div className="text-xs text-muted-foreground">Yesterday vs. Today</div>
-                <div className="grid grid-cols-4 font-semibold text-xs border-b pb-1">
-                  <div>Ticker</div>
-                  <div>Prev Call</div>
-                  <div>Actual</div>
-                  <div>Result</div>
-                </div>
-                {(["OKLO", "RKLB"] as const).map((t) => perfRow(t))}
-                {totals && (
-                  <div className="mt-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span>Correct</span><span className="font-semibold">{totals.correct}</span>
+
+        {/* Phase 1 Metrics - Three Column Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+          {/* Yesterday */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Yesterday</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                if (!prev) {
+                  return <div className="text-sm text-muted-foreground">No yesterday data</div>;
+                }
+                
+                const yesterdayMetrics = calculateDayMetrics(prev);
+                return (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>P&L:</span>
+                      <span className={`font-bold ${yesterdayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        ${yesterdayMetrics.day_pnl.toFixed(0)}
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Incorrect</span><span className="font-semibold">{totals.incorrect}</span>
+                    <div className="flex justify-between text-sm">
+                      <span>Hit Rate:</span>
+                      <span className="font-semibold">
+                        {yesterdayMetrics.day_trades > 0 ? ((yesterdayMetrics.day_hits / yesterdayMetrics.day_trades) * 100).toFixed(0) : 0}%
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Success rate</span><span className="font-semibold">{(totals.success_rate * 100).toFixed(1)}%</span>
+                    <div className="flex justify-between text-sm">
+                      <span>Quality:</span>
+                      <span className="font-semibold">{yesterdayMetrics.day_avg_quality.toFixed(0)}/100</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Avg Error:</span>
+                      <span className="font-mono">{yesterdayMetrics.day_avg_error.toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Trades:</span>
+                      <span>{yesterdayMetrics.day_trades}</span>
                     </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Once we have at least two days in history, this will summarize yesterday's prediction vs today's outcome.</div>
-            )}
-          </CardContent>
-        </Card>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          
+          {/* Today */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Today</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                if (!latest?.totals?.trade_count) {
+                  return <div className="text-sm text-muted-foreground">No metrics available</div>;
+                }
+                
+                const todayMetrics = calculateDayMetrics(latest);
+                return (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>P&L:</span>
+                      <span className={`font-bold ${todayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        ${todayMetrics.day_pnl.toFixed(0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Hit Rate:</span>
+                      <span className="font-semibold">
+                        {todayMetrics.day_trades > 0 ? ((todayMetrics.day_hits / todayMetrics.day_trades) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Quality:</span>
+                      <span className="font-semibold">{todayMetrics.day_avg_quality.toFixed(0)}/100</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Avg Error:</span>
+                      <span className="font-mono">{todayMetrics.day_avg_error.toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Trades:</span>
+                      <span>{todayMetrics.day_trades}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          
+
+          {/* All-Time */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">All-Time ({history.length} days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {latest?.totals?.trade_count ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Total P&L:</span>
+                    <span className={`font-bold ${(latest.totals.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      ${(latest.totals.total_pnl || 0).toFixed(0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Hit Rate:</span>
+                    <span className="font-semibold">{(latest.totals.success_rate * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Quality:</span>
+                    <span className="font-semibold">{(latest.totals.avg_quality_score || 0).toFixed(0)}/100</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Avg Error:</span>
+                    <span className="font-mono">{(latest.totals.avg_abs_error || 0).toFixed(2)}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Trade Count:</span>
+                    <span>{latest.totals.trade_count}</span>
+                  </div>
+                  
+                  {/* Best/Worst Calls */}
+                  {(latest.totals.best_call || latest.totals.worst_call) && (
+                    <div className="border-t pt-2 mt-3">
+                      <div className="text-xs text-muted-foreground mb-1">Best & Worst</div>
+                      {latest.totals.best_call && (
+                        <div className="flex justify-between text-xs">
+                          <span>🏆 {latest.totals.best_call.ticker}</span>
+                          <span className="text-emerald-600 font-bold">+${latest.totals.best_call.pnl.toFixed(0)}</span>
+                        </div>
+                      )}
+                      {latest.totals.worst_call && (
+                        <div className="flex justify-between text-xs">
+                          <span>💥 {latest.totals.worst_call.ticker}</span>
+                          <span className="text-rose-600 font-bold">${latest.totals.worst_call.pnl.toFixed(0)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Metrics will appear after we have prediction vs actual data pairs.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
        
       </div>
