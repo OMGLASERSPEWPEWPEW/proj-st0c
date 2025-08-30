@@ -840,164 +840,96 @@ async function loadFromDataRaw() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {(() => {
-            // Get the most recent RNN prediction with actual results
-            const rnnWithResults = rnnHistoricalPredictions.filter(rnn => 
-              Object.values(rnn.predictions).some(p => p.actual_pct_change !== undefined)
-            );
-            const latestRnn = rnnWithResults[rnnWithResults.length - 1];
+          <div className="space-y-4">
+            {/* Debug Info */}
+            <div className="text-xs text-gray-500">
+              RNN Historical Predictions: {rnnHistoricalPredictions.length} loaded
+            </div>
             
-            // Calculate all-time RNN metrics
-            let totalPnL = 0, correctCount = 0, totalCount = 0, totalError = 0, totalQuality = 0;
-            rnnWithResults.forEach(rnn => {
-              Object.values(rnn.predictions).forEach(pred => {
-                if (pred.daily_pnl !== undefined) {
-                  totalPnL += pred.daily_pnl;
-                  totalError += pred.abs_error_pct || 0;
-                  totalQuality += pred.quality_score || 0;
-                  totalCount++;
-                  if (pred.correct) correctCount++;
-                }
-              });
-            });
-            
-            const hasData = totalCount > 0;
-            
-            return (
-              <div className="space-y-4">
-                {/* Ticker Breakdown */}
+            {rnnHistoricalPredictions.length > 0 ? (
+              <>
+                {/* Latest RNN Predictions */}
                 <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground font-semibold">Latest ML Results</div>
-                  <div className="grid grid-cols-6 font-semibold text-xs border-b pb-1">
+                  <div className="text-xs text-muted-foreground font-semibold">Latest RNN Results</div>
+                  <div className="grid grid-cols-3 font-semibold text-xs border-b pb-1">
                     <div>Ticker</div>
+                    <div>Date</div>
                     <div>Predicted</div>
-                    <div>Actual</div>
-                    <div>Error</div>
-                    <div>Result</div>
-                    <div>P&L</div>
                   </div>
-                  {(["OKLO", "RKLB"] as const).map((ticker) => {
-                    const rnnPred = latestRnn?.predictions[ticker];
-                    const predicted = rnnPred?.predicted_next_day_pct;
-                    const actual = rnnPred?.actual_pct_change;
-                    const error = rnnPred?.abs_error_pct;
-                    const correct = rnnPred?.correct;
-                    const pnl = rnnPred?.daily_pnl;
-
-                    return (
-                      <div key={ticker} className="grid grid-cols-6 text-xs items-center">
+                  
+                  {/* Show the most recent prediction */}
+                  {(() => {
+                    const latest = rnnHistoricalPredictions[rnnHistoricalPredictions.length - 1];
+                    if (!latest) return <div>No predictions</div>;
+                    
+                    return Object.entries(latest.predictions).map(([ticker, pred]) => (
+                      <div key={ticker} className="grid grid-cols-3 text-xs items-center">
                         <div className="font-mono">{ticker}</div>
-                        <div className={rnnPred ? (predicted >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                          {rnnPred ? pctText(predicted) : "No data"}
-                        </div>
-                        <div className={actual !== undefined ? (actual >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                          {actual !== undefined ? pctText(actual) : "No data"}
-                        </div>
-                        <div className={error !== undefined ? "text-muted-foreground" : "text-muted-foreground"}>
-                          {error !== undefined ? `${error.toFixed(1)}%` : "—"}
-                        </div>
-                        <div className={correct !== undefined ? (correct ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                          {correct !== undefined ? (correct ? "✓" : "✗") : "—"}
-                        </div>
-                        <div className={pnl !== undefined ? (pnl >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                          {pnl !== undefined ? `$${pnl}` : "—"}
+                        <div>{latest.date}</div>
+                        <div className={pred.predicted_next_day_pct >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                          {pctText(pred.predicted_next_day_pct)}
                         </div>
                       </div>
-                    );
-                  })}
+                    ));
+                  })()}
                 </div>
 
-                {/* Today's ML Performance */}
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground font-semibold">Today's ML Performance</div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span>P&L:</span>
-                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
-                          {latestRnn ? `$${Object.values(latestRnn.predictions).reduce((sum, p) => sum + (p.daily_pnl || 0), 0)}` : "No data"}
-                        </span>
+                {/* All Historical Predictions */}
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground font-semibold">Historical RNN Predictions</div>
+                  <div className="max-h-40 overflow-y-auto">
+                    {rnnHistoricalPredictions.map((rnn) => (
+                      <div key={rnn.date} className="text-xs border-b pb-1">
+                        <div className="font-semibold">{rnn.date}</div>
+                        <div className="grid grid-cols-2 gap-2 pl-2">
+                          {Object.entries(rnn.predictions).map(([ticker, pred]) => (
+                            <div key={ticker} className="flex justify-between">
+                              <span className="font-mono">{ticker}:</span>
+                              <span className={pred.predicted_next_day_pct >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                                {pctText(pred.predicted_next_day_pct)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Hit Rate:</span>
-                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
-                          {latestRnn ? `${Math.round(Object.values(latestRnn.predictions).filter(p => p.correct).length / Object.values(latestRnn.predictions).filter(p => p.correct !== undefined).length * 100)}%` : "No data"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Avg Error:</span>
-                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
-                          {latestRnn ? `${(Object.values(latestRnn.predictions).reduce((sum, p) => sum + (p.abs_error_pct || 0), 0) / Object.values(latestRnn.predictions).filter(p => p.abs_error_pct !== undefined).length).toFixed(1)}%` : "No data"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div></div> {/* Spacer */}
-
-                  {/* All-Time ML */}
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground font-semibold">All-Time ML</div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span>Total P&L:</span>
-                        <span className={hasData ? `font-semibold ${totalPnL >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 'text-muted-foreground'}>
-                          {hasData ? `$${totalPnL}` : "No data"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Hit Rate:</span>
-                        <span className={hasData ? 'font-semibold' : 'text-muted-foreground'}>
-                          {hasData ? `${Math.round(correctCount / totalCount * 100)}%` : "No data"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Quality:</span>
-                        <span className={hasData ? 'font-semibold' : 'text-muted-foreground'}>
-                          {hasData ? `${Math.round(totalQuality / totalCount)}/100` : "No data"}
-                        </span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Tomorrow's ML Predictions */}
-                <div className="border-t pt-3">
-                  <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
-                  {isLoadingMlPredictions ? (
-                    <div className="text-sm text-muted-foreground">Loading predictions...</div>
-                  ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(mlPredictions).map(([ticker, prediction]) => (
-                        <div key={ticker} className="flex justify-between text-sm">
-                          <span className="font-mono">{ticker}:</span>
-                          <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {pctText(prediction)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["OKLO", "RKLB"] as const).map((ticker) => (
-                        <div key={ticker} className="flex justify-between text-sm">
-                          <span className="font-mono">{ticker}:</span>
-                          <span className="text-muted-foreground">No prediction</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Data Status Message */}
-                {!hasData && (
-                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                    RNN predictions need at least one day of actual results to calculate performance metrics.
-                  </div>
-                )}
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                No RNN predictions found. Run the pipeline to generate predictions.
               </div>
-            );
-          })()}
+            )}
+
+            {/* Tomorrow's ML Predictions - Current predictions from latest_ml_predictions.json */}
+            <div className="border-t pt-3">
+              <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
+              {isLoadingMlPredictions ? (
+                <div className="text-sm text-muted-foreground">Loading predictions...</div>
+              ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(mlPredictions).map(([ticker, prediction]) => (
+                    <div key={ticker} className="flex justify-between text-sm">
+                      <span className="font-mono">{ticker}:</span>
+                      <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {pctText(prediction)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {(["OKLO", "RKLB"] as const).map((ticker) => (
+                    <div key={ticker} className="flex justify-between text-sm">
+                      <span className="font-mono">{ticker}:</span>
+                      <span className="text-muted-foreground">No prediction</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
       
