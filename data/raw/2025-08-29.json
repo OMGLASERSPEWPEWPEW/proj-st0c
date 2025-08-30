@@ -1,0 +1,89 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-08-29",
+  "asof": "2025-08-29T15:05:00-05:00",
+  "verdict": "Neutral",
+  "tldr": "A choppy Friday into the long weekend: SPY slipped while VIX jumped after Core PCE landed near expectations, pointing to a mild risk‑off finish. OKLO reversed Thursday’s pop with a >5% pullback; RKLB eased ~1% but retained most weekly gains. For the next trading day (Tue, Sep 2), base case is range‑bound to slightly positive if headlines stay quiet—VIX spikes before long weekends often mean‑revert and breadth remains adequate. Positioning: we size small given event risk (ISM, NFP, CPI) mid‑week. Watched closes: OKLO 73.57 (−5.55%), RKLB 47.37 (−1.13%), SPY 644.74 (−0.64%), VIX 15.60 (+8.11%). Next‑day calls (Small ≤1σ): OKLO +0.7% on tactical bounce (Action: Buy); RKLB +0.4% with steady cadence (Action: Hold).",
+  "tickers": {
+    "OKLO": {
+      "close": 73.57,
+      "pct_change": -5.55,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": null,
+      "predicted_next_day_pct": 0.7,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 35,
+      "dip_exhaustion_prob": 55
+    },
+    "RKLB": {
+      "close": 47.37,
+      "pct_change": -1.13,
+      "streak": 1,
+      "call": "Neutral",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": null,
+      "predicted_next_day_pct": 0.4,
+      "expected_degree": "Small",
+      "action": "Hold",
+      "dip_onset_prob": 40,
+      "dip_exhaustion_prob": 45
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 644.74, "predicted_next_day_pct": 0.2 },
+    "VIXY": { "close": 34.68 },
+    "VIXM": { "close": 16.28 },
+    "VIX": 15.60
+  },
+  "prices": {
+    "OKLO": { "open": 77.67, "high": 78.50, "low": 72.78, "close": 73.57, "volume": 7783043 },
+    "RKLB": { "open": 47.85, "high": 48.80, "low": 46.02, "close": 47.37, "volume": 10472026 },
+    "SPY":  { "open": 647.47, "high": 647.84, "low": 643.14, "close": 644.74, "volume": 43244731 },
+    "VIXY": { "open": 34.51, "high": 34.71, "low": 34.34, "close": 34.68, "volume": 282816 },
+    "VIXM": { "open": 16.18, "high": 16.38, "low": 16.18, "close": 16.28, "volume": 12649 },
+    "VIX":  { "open": 14.31, "high": 15.97, "low": 14.31, "close": 15.60 }
+  },
+  "macro_watch": [
+    { "event": "Core PCE Price Index (YoY, Jul)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-905", "next_release_hint": "Next PCE release Fri, Sep 26" },
+    { "event": "Employment Situation (NFP)", "publisher": "BLS", "link": "https://www.bls.gov/schedule/news_release/empsit.htm", "next_release_hint": "Fri, Sep 5 @ 08:30 ET" },
+    { "event": "CPI (Aug)", "publisher": "BLS", "link": "https://www.bls.gov/cpi/", "next_release_hint": "Thu, Sep 11 @ 08:30 ET" },
+    { "event": "PPI (Aug)", "publisher": "BLS", "link": "https://www.bls.gov/schedule/news_release/ppi.htm", "next_release_hint": "Wed, Sep 10 @ 08:30 ET" },
+    { "event": "ISM Manufacturing PMI (Sep)", "publisher": "ISM", "link": "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/", "next_release_hint": "First business day of month" },
+    { "event": "ISM Services PMI (Sep)", "publisher": "ISM", "link": "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/", "next_release_hint": "Third business day of month" },
+    { "event": "Retail Sales (Aug)", "publisher": "U.S. Census", "link": "https://www.census.gov/retail/release_schedule.html", "next_release_hint": "Mon, Sep 16 @ 08:30 ET" },
+    { "event": "FOMC/SEP/Minutes", "publisher": "Federal Reserve", "link": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "next_release_hint": "Sep 16–17 meeting (with SEP)" }
+  ],
+  "sources": [
+    { "id": "px_oklo_yf_2025-08-29", "type": "price", "ticker": "OKLO", "publisher": "Yahoo Finance", "title": "Oklo Inc (OKLO) Historical Data", "url": "https://finance.yahoo.com/quote/OKLO/history/", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: O 77.67 H 78.50 L 72.78 C 73.57; Aug 28 close 77.89." },
+    { "id": "px_oklo_nasdaq_2025-08-28", "type": "price", "ticker": "OKLO", "publisher": "Nasdaq", "title": "OKLO Historical Quotes", "url": "https://www.nasdaq.com/market-activity/stocks/oklo/historical", "date_accessed": "2025-08-29", "excerpt": "08/28/2025 close $77.89; 08/27/2025 close $73.20." },
+    { "id": "px_rklb_sa_2025-08-29", "type": "price", "ticker": "RKLB", "publisher": "StockAnalysis", "title": "RKLB Stock Price History", "url": "https://stockanalysis.com/stocks/rklb/history/", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: O 47.85 H 48.80 L 46.02 C 47.37 (−1.13%) Vol 10.47M." },
+    { "id": "px_spy_sa_2025-08-29", "type": "price", "ticker": "SPY", "publisher": "StockAnalysis", "title": "SPY Historical Data", "url": "https://stockanalysis.com/etf/spy/history/", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: O 647.47 H 647.84 L 643.14 C 644.74 (−0.64%)." },
+    { "id": "px_vix_inv_2025-08-29", "type": "price", "ticker": "VIX", "publisher": "Investing.com", "title": "CBOE Volatility Index (VIX) Historical", "url": "https://www.investing.com/indices/volatility-s-p-500-historical-data", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: Close 15.60; Open 14.31; High 15.97; Low 14.31; +8.11%." },
+    { "id": "px_vixy_yf_2025-08-29", "type": "price", "ticker": "VIXY", "publisher": "Yahoo Finance", "title": "VIXY Historical Data", "url": "https://finance.yahoo.com/quote/VIXY/history/", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: O 34.51 H 34.71 L 34.34 C 34.68." },
+    { "id": "px_vixm_sa_2025-08-29", "type": "price", "ticker": "VIXM", "publisher": "StockAnalysis", "title": "VIXM Stock Price History", "url": "https://stockanalysis.com/etf/vixm/history/", "date_accessed": "2025-08-29", "excerpt": "Aug 29, 2025: O 16.18 H 16.38 L 16.18 C 16.28." },
+    { "id": "news_oklo_bofa_inv_2025-08-26", "type": "company_news", "ticker": "OKLO", "publisher": "Investing.com", "title": "BofA initiates Oklo with Buy, $92 PT", "url": "https://www.investing.com/news/analyst-ratings/bofa-securities-initiates-oklo-stock-with-buy-rating-92-price-target-93CH-4210597", "published_at": "2025-08-26", "stance": "positive", "excerpt": "BofA starts Oklo at Buy with $92 target; momentum and pipeline noted." },
+    { "id": "news_oklo_doe_press_2025-08-13", "type": "company_news", "ticker": "OKLO", "publisher": "Oklo IR (Business Wire)", "title": "Oklo Selected for Three Projects Under DOE Reactor Pilot Program", "url": "https://oklo.com/newsroom/news-details/2025/Oklo-Selected-for-Three-Projects-Under-U-S--Department-of-Energys-Reactor-Pilot-Program/default.aspx", "published_at": "2025-08-13", "stance": "positive", "excerpt": "Oklo & subsidiary selected for three DOE reactor pilot projects." },
+    { "id": "news_rklb_bw_lc3_2025-08-28", "type": "company_news", "ticker": "RKLB", "publisher": "Business Wire", "title": "Rocket Lab Opens Launch Complex 3", "url": "https://www.businesswire.com/news/home/20250827593085/en/Rocket-Lab-Opens-Launch-Complex-3-A-Critical-Milestone-On-The-Path-To-Neutrons-First-Launch", "published_at": "2025-08-28", "stance": "positive", "excerpt": "LC‑3 at MARS opened; milestone toward Neutron’s first launch." },
+    { "id": "news_rklb_spacenews_lc3_2025-08-29", "type": "company_news", "ticker": "RKLB", "publisher": "SpaceNews", "title": "Rocket Lab inaugurates Neutron launch pad", "url": "https://spacenews.com/rocket-lab-inaugurates-neutron-launch-pad/", "published_at": "2025-08-29", "stance": "positive", "excerpt": "Formal opening of Neutron’s launch site on Aug. 28; progress toward first flight." },
+    { "id": "macro_pce_bea_2025-08-29", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "BEA", "title": "PCE Price Index — Current Release", "url": "https://www.bea.gov/data/personal-consumption-expenditures-price-index", "date_accessed": "2025-08-29", "excerpt": "Current release Aug 29, 2025; next release Sep 26, 2025." },
+    { "id": "macro_pce_inv_2025-08-29", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "Investing.com", "title": "Core PCE YoY", "url": "https://www.investing.com/economic-calendar/core-pce-price-index-905", "date_accessed": "2025-08-29", "excerpt": "Jul Core PCE YoY 2.9% (in line)." },
+    { "id": "macro_bls_cpi_sched_2025-09", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "BLS", "title": "CPI — Next Release", "url": "https://www.bls.gov/cpi/", "date_accessed": "2025-08-29", "excerpt": "Aug CPI scheduled Sep 11, 2025 @ 8:30 ET." },
+    { "id": "macro_bls_nfp_sched_2025-09-05", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "BLS", "title": "Employment Situation schedule", "url": "https://www.bls.gov/schedule/news_release/empsit.htm", "date_accessed": "2025-08-29", "excerpt": "Aug 2025 Employment Situation on Sep 5, 2025 @ 8:30 ET." },
+    { "id": "macro_bls_ppi_sched_2025-09-10", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "BLS", "title": "PPI schedule", "url": "https://www.bls.gov/schedule/news_release/ppi.htm", "date_accessed": "2025-08-29", "excerpt": "Aug PPI on Sep 10, 2025 @ 8:30 ET." },
+    { "id": "macro_census_retail_sched_2025-09-16", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "U.S. Census", "title": "Retail Sales release schedule", "url": "https://www.census.gov/retail/release_schedule.html", "date_accessed": "2025-08-29", "excerpt": "Aug Retail Sales on Sep 16, 2025 @ 8:30 ET." },
+    { "id": "macro_fed_fomc_2025_sep", "type": "macro", "tickers": ["SPY","VIX"], "publisher": "Federal Reserve", "title": "FOMC 2025 Calendar", "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "date_accessed": "2025-08-29", "excerpt": "Upcoming meeting Sep 16–17 (with SEP/dots)." }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Single‑day oversold after prior rally; bounce odds improve absent new headlines." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Constructive cadence (LC‑3 milestone) supports mild continuation despite higher VIX." }
+    }
+  },
+  "totals": { "correct": 0, "incorrect": 0, "success_rate": 0.0 },
+  "notes": "Regular session today; markets closed Mon (Labor Day). Technical stats to populate as a 20‑day history accrues in the tracker."
+}

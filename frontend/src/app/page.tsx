@@ -48,7 +48,9 @@ import {
   COLOR_BY_SERIES,
   legendFormatter,
   computePhase1Metrics,
-  calculateDayMetrics  
+  calculateDayMetrics,
+  calculateMLDayMetrics,
+  calculateMLRunningMetrics  
 } from '@/utils/tracker';
 
 export default function TrackerDashboard() {
@@ -573,58 +575,7 @@ async function loadFromDataRaw() {
         </CardContent>
       </Card>
 
-      {prev && latest ? (
-        <div className="space-y-3">
-          <div className="text-xs text-muted-foreground">Yesterday vs. Today</div>
-          <div className="grid grid-cols-5 font-semibold text-xs border-b pb-1">
-            <div>Ticker</div>
-            <div>Call</div>
-            <div>Actual</div>
-            <div>Result</div>
-            <div>P&L</div>
-          </div>
-          {(["OKLO", "RKLB"] as const).map((t) => {
-            const prevInfo = prev.tickers[t];
-            const currInfo = latest.tickers[t];
-            if (!prevInfo || !currInfo) return null;
-
-            const wasUp = (currInfo.pct_change || 0) > 0;
-            const call = prevInfo.call;
-            const correct = currInfo.correct;
-            const pnl = currInfo.daily_pnl;
-
-            return (
-              <div key={t} className="grid grid-cols-5 text-xs items-center">
-                <div className="font-mono">{t}</div>
-                <div>{call ? `${callEmoji(call)} ${call}` : "—"}</div>
-                <div className={wasUp ? "text-emerald-600" : "text-rose-600"}>
-                  {pctText(currInfo.pct_change || 0)}
-                </div>
-                <div className={correct ? "text-emerald-600" : "text-rose-600"}>
-                  {correct ? "✓" : "✗"} {currInfo.quality_score?.toFixed(0)}/100
-                </div>
-                <div className={`font-bold ${(pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {pnl ? `$${pnl.toFixed(0)}` : "—"}
-                </div>
-              </div>
-            );
-          })}
-          {/* Running totals */}
-          <div className="mt-3 text-sm border-t pt-3">
-            <div className="flex items-center justify-between">
-              <span>Hit Rate</span><span className="font-semibold">{((latest.totals?.success_rate || 0) * 100).toFixed(1)}%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Total P&L</span>
-              <span className={`font-semibold ${(latest.totals?.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                ${(latest.totals?.total_pnl || 0).toFixed(0)}
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-sm text-muted-foreground">Performance metrics will appear after we have consecutive days of data.</div>
-      )}
+      
 
       {/* Enhanced TL;DR Section */}
       {latest && (
@@ -702,42 +653,357 @@ async function loadFromDataRaw() {
         </Card>
       )}
 
-       {/* ML Model Forecasts Card */}
+      {/* Prediction Performance Tracker: ChatGPT */}
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">ML Model Forecasts</CardTitle>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleRunPipeline}
-            disabled={isPipelineRunning}
-          >
-            {isPipelineRunning ? 'Pipeline Running...' : 'Re-run Pipeline'}
-          </Button>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Prediction Performance Tracker: ChatGPT</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoadingMlPredictions ? (
-            <div className="text-sm text-muted-foreground">Loading latest predictions...</div>
-          ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 text-xs text-muted-foreground">
-                <div>Ticker</div>
-                <div className="text-right">Predicted Change</div>
+          {prev && latest ? (
+            <div className="space-y-4">
+              {/* Ticker Breakdown */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground font-semibold">Latest Results</div>
+                <div className="grid grid-cols-5 font-semibold text-xs border-b pb-1">
+                  <div>Ticker</div>
+                  <div>Call</div>
+                  <div>Actual</div>
+                  <div>Result</div>
+                  <div>P&L</div>
+                </div>
+                {(["OKLO", "RKLB"] as const).map((t) => {
+                  const prevInfo = prev.tickers[t];
+                  const currInfo = latest.tickers[t];
+                  if (!prevInfo || !currInfo) return null;
+
+                  const wasUp = (currInfo.pct_change || 0) > 0;
+                  const call = prevInfo.call;
+                  const correct = currInfo.correct;
+                  const pnl = currInfo.daily_pnl;
+
+                  return (
+                    <div key={t} className="grid grid-cols-5 text-xs items-center">
+                      <div className="font-mono">{t}</div>
+                      <div>{call ? `${callEmoji(call)} ${call}` : "—"}</div>
+                      <div className={wasUp ? "text-emerald-600" : "text-rose-600"}>
+                        {pctText(currInfo.pct_change || 0)}
+                      </div>
+                      <div className={correct ? "text-emerald-600" : "text-rose-600"}>
+                        {correct ? "✓" : "✗"} {currInfo.quality_score?.toFixed(0) || 0}/100
+                      </div>
+                      <div className={`font-bold ${(pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {pnl ? `$${pnl.toFixed(0)}` : "—"}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {Object.entries(mlPredictions).map(([ticker, prediction]) => (
-                <div key={ticker} className="grid grid-cols-2 font-mono">
-                  <div>{ticker}</div>
-                  <div className={`text-right font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {pctText(prediction)}
+
+              {/* Daily Metrics Comparison */}
+              <div className="grid grid-cols-3 gap-4 border-t pt-3">
+                {/* Yesterday */}
+                <div>
+                  <div className="text-xs text-muted-foreground font-semibold mb-2">Yesterday</div>
+                  {(() => {
+                    const yesterdayMetrics = calculateDayMetrics(prev);
+                    return (
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span>P&L:</span>
+                          <span className={`font-semibold ${yesterdayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            ${yesterdayMetrics.day_pnl.toFixed(0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Hit Rate:</span>
+                          <span className="font-semibold">
+                            {yesterdayMetrics.day_trades > 0 ? ((yesterdayMetrics.day_hits / yesterdayMetrics.day_trades) * 100).toFixed(0) : 0}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Quality:</span>
+                          <span className="font-semibold">{yesterdayMetrics.day_avg_quality.toFixed(0)}/100</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Today */}
+                <div>
+                  <div className="text-xs text-muted-foreground font-semibold mb-2">Today</div>
+                  {(() => {
+                    const todayMetrics = calculateDayMetrics(latest);
+                    return (
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span>P&L:</span>
+                          <span className={`font-semibold ${todayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            ${todayMetrics.day_pnl.toFixed(0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Hit Rate:</span>
+                          <span className="font-semibold">
+                            {todayMetrics.day_trades > 0 ? ((todayMetrics.day_hits / todayMetrics.day_trades) * 100).toFixed(0) : 0}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Quality:</span>
+                          <span className="font-semibold">{todayMetrics.day_avg_quality.toFixed(0)}/100</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* All-Time */}
+                <div>
+                  <div className="text-xs text-muted-foreground font-semibold mb-2">All-Time ({history.length} days)</div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span>Total P&L:</span>
+                      <span className={`font-semibold ${(latest.totals?.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        ${(latest.totals?.total_pnl || 0).toFixed(0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Hit Rate:</span>
+                      <span className="font-semibold">{((latest.totals?.success_rate || 0) * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Quality:</span>
+                      <span className="font-semibold">{(latest.totals?.avg_quality_score || 0).toFixed(0)}/100</span>
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Best/Worst and Summary */}
+              <div className="border-t pt-3 space-y-2">
+                {(latest.totals?.best_call || latest.totals?.worst_call) && (
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">Best & Worst</div>
+                    <div className="flex justify-between text-xs">
+                      {latest.totals?.best_call && (
+                        <span>
+                          🏆 {latest.totals.best_call.ticker}: 
+                          <span className="text-emerald-600 font-bold ml-1">+${latest.totals.best_call.pnl.toFixed(0)}</span>
+                        </span>
+                      )}
+                      {latest.totals?.worst_call && (
+                        <span>
+                          💥 {latest.totals.worst_call.ticker}: 
+                          <span className="text-rose-600 font-bold ml-1">${latest.totals.worst_call.pnl.toFixed(0)}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center text-sm border-t pt-2">
+                  <span className="text-muted-foreground">
+                    {latest.totals?.trade_count || 0} trades • {((latest.totals?.avg_abs_error || 0)).toFixed(2)}% avg error
+                  </span>
+                  <span className={`font-bold text-lg ${(latest.totals?.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    ${(latest.totals?.total_pnl || 0).toFixed(0)}
+                  </span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">
-              No predictions available. The pipeline may be running in the background. Please refresh in a moment.
+              Performance metrics will appear after we have consecutive days of data.
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Prediction Performance Tracker: ChatGPT-RNN  */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center justify-between">
+            Prediction Performance Tracker: ChatGPT-RNN
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleRunPipeline}
+              disabled={isPipelineRunning}
+            >
+              {isPipelineRunning ? 'Running...' : 'Re-run Pipeline'}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Ticker Breakdown - Always Show */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground font-semibold">Latest ML Results</div>
+              <div className="grid grid-cols-6 font-semibold text-xs border-b pb-1">
+                <div>Ticker</div>
+                <div>Predicted</div>
+                <div>Actual</div>
+                <div>Error</div>
+                <div>Result</div>
+                <div>P&L</div>
+              </div>
+              {(["OKLO", "RKLB"] as const).map((t) => {
+                const prevMlPred = prev?.ml_predictions?.[t];
+                const currInfo = latest?.tickers[t];
+                const currMlInfo = latest?.ml_predictions?.[t];
+                
+                // Get what data we can
+                const predicted = prevMlPred?.predicted_next_day_pct || 0;
+                const actual = currInfo?.pct_change || 0;
+                const error = prevMlPred && currInfo ? Math.abs(predicted - actual) : 0;
+                const correct = currMlInfo?.correct;
+                const pnl = currMlInfo?.daily_pnl;
+                const hasHistoricalData = prevMlPred && currInfo;
+
+                return (
+                  <div key={t} className="grid grid-cols-6 text-xs items-center">
+                    <div className="font-mono">{t}</div>
+                    <div className={hasHistoricalData ? (predicted >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                      {hasHistoricalData ? pctText(predicted) : "No data"}
+                    </div>
+                    <div className={currInfo ? (actual >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                      {currInfo ? pctText(actual) : "No data"}
+                    </div>
+                    <div className={hasHistoricalData ? "text-muted-foreground" : "text-muted-foreground"}>
+                      {hasHistoricalData ? `${error.toFixed(2)}%` : "—"}
+                    </div>
+                    <div className={correct !== undefined ? (correct ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                      {correct !== undefined ? 
+                        `${correct ? "✓" : "✗"} ${currMlInfo?.quality_score?.toFixed(0) || 0}/100` : 
+                        "No data"
+                      }
+                    </div>
+                    <div className={pnl !== undefined ? 
+                      `font-bold ${pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
+                      "text-muted-foreground"
+                    }>
+                      {pnl !== undefined ? `$${pnl.toFixed(0)}` : "—"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ML Performance Metrics - Always Show */}
+            <div className="grid grid-cols-2 gap-4 border-t pt-3">
+              {/* Current ML Stats */}
+              <div>
+                <div className="text-xs text-muted-foreground font-semibold mb-2">Today's ML Performance</div>
+                <div className="space-y-1 text-xs">
+                  {(() => {
+                    const hasData = latest?.ml_predictions;
+                    const mlMetrics = hasData ? calculateMLDayMetrics(latest) : null;
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between">
+                          <span>P&L:</span>
+                          <span className={hasData && mlMetrics ? 
+                            `font-semibold ${mlMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
+                            'text-muted-foreground'
+                          }>
+                            {hasData && mlMetrics ? `$${mlMetrics.day_pnl.toFixed(0)}` : "No data"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Hit Rate:</span>
+                          <span className={hasData && mlMetrics ? 'font-semibold' : 'text-muted-foreground'}>
+                            {hasData && mlMetrics && mlMetrics.day_trades > 0 ? 
+                              `${((mlMetrics.day_hits / mlMetrics.day_trades) * 100).toFixed(0)}%` : 
+                              "No data"
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Avg Error:</span>
+                          <span className={hasData && mlMetrics ? 'font-mono' : 'text-muted-foreground'}>
+                            {hasData && mlMetrics ? `${mlMetrics.day_avg_error.toFixed(2)}%` : "No data"}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* All-Time ML Stats */}
+              <div>
+                <div className="text-xs text-muted-foreground font-semibold mb-2">All-Time ML</div>
+                <div className="space-y-1 text-xs">
+                  {(() => {
+                    const hasHistoricalData = history.some(entry => entry.ml_predictions);
+                    const allTimeMl = hasHistoricalData ? calculateMLRunningMetrics(history) : null;
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Total P&L:</span>
+                          <span className={hasHistoricalData && allTimeMl ? 
+                            `font-semibold ${allTimeMl.total_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
+                            'text-muted-foreground'
+                          }>
+                            {hasHistoricalData && allTimeMl ? `$${allTimeMl.total_pnl.toFixed(0)}` : "No data"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Hit Rate:</span>
+                          <span className={hasHistoricalData && allTimeMl ? 'font-semibold' : 'text-muted-foreground'}>
+                            {hasHistoricalData && allTimeMl ? `${(allTimeMl.hit_rate * 100).toFixed(0)}%` : "No data"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Quality:</span>
+                          <span className={hasHistoricalData && allTimeMl ? 'font-semibold' : 'text-muted-foreground'}>
+                            {hasHistoricalData && allTimeMl ? `${allTimeMl.avg_quality_score.toFixed(0)}/100` : "No data"}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Current ML Predictions for Tomorrow - Show if available */}
+            <div className="border-t pt-3">
+              <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
+              {isLoadingMlPredictions ? (
+                <div className="text-sm text-muted-foreground">Loading predictions...</div>
+              ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(mlPredictions).map(([ticker, prediction]) => (
+                    <div key={ticker} className="flex justify-between text-sm">
+                      <span className="font-mono">{ticker}:</span>
+                      <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {pctText(prediction)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {(["OKLO", "RKLB"] as const).map((ticker) => (
+                    <div key={ticker} className="flex justify-between text-sm">
+                      <span className="font-mono">{ticker}:</span>
+                      <span className="text-muted-foreground">No prediction</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Data Status Message */}
+            {!history.some(entry => entry.ml_predictions) && (
+              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                Start saving ML predictions daily to enable performance tracking and historical comparison.
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
       
@@ -851,168 +1117,6 @@ async function loadFromDataRaw() {
       )}
 
       
-     
-
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-
-        {/* Phase 1 Metrics - Three Column Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-          {/* Yesterday */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Yesterday</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                if (!prev) {
-                  return <div className="text-sm text-muted-foreground">No yesterday data</div>;
-                }
-                
-                const yesterdayMetrics = calculateDayMetrics(prev);
-                return (
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>P&L:</span>
-                      <span className={`font-bold ${yesterdayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        ${yesterdayMetrics.day_pnl.toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Hit Rate:</span>
-                      <span className="font-semibold">
-                        {yesterdayMetrics.day_trades > 0 ? ((yesterdayMetrics.day_hits / yesterdayMetrics.day_trades) * 100).toFixed(0) : 0}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Quality:</span>
-                      <span className="font-semibold">{yesterdayMetrics.day_avg_quality.toFixed(0)}/100</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Avg Error:</span>
-                      <span className="font-mono">{yesterdayMetrics.day_avg_error.toFixed(2)}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Trades:</span>
-                      <span>{yesterdayMetrics.day_trades}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-
-          
-          {/* Today */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                if (!latest?.totals?.trade_count) {
-                  return <div className="text-sm text-muted-foreground">No metrics available</div>;
-                }
-                
-                const todayMetrics = calculateDayMetrics(latest);
-                return (
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>P&L:</span>
-                      <span className={`font-bold ${todayMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        ${todayMetrics.day_pnl.toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Hit Rate:</span>
-                      <span className="font-semibold">
-                        {todayMetrics.day_trades > 0 ? ((todayMetrics.day_hits / todayMetrics.day_trades) * 100).toFixed(0) : 0}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Quality:</span>
-                      <span className="font-semibold">{todayMetrics.day_avg_quality.toFixed(0)}/100</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Avg Error:</span>
-                      <span className="font-mono">{todayMetrics.day_avg_error.toFixed(2)}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Trades:</span>
-                      <span>{todayMetrics.day_trades}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-
-          
-
-          {/* All-Time */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">All-Time ({history.length} days)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {latest?.totals?.trade_count ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Total P&L:</span>
-                    <span className={`font-bold ${(latest.totals.total_pnl || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      ${(latest.totals.total_pnl || 0).toFixed(0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Hit Rate:</span>
-                    <span className="font-semibold">{(latest.totals.success_rate * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Quality:</span>
-                    <span className="font-semibold">{(latest.totals.avg_quality_score || 0).toFixed(0)}/100</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg Error:</span>
-                    <span className="font-mono">{(latest.totals.avg_abs_error || 0).toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Trade Count:</span>
-                    <span>{latest.totals.trade_count}</span>
-                  </div>
-                  
-                  {/* Best/Worst Calls */}
-                  {(latest.totals.best_call || latest.totals.worst_call) && (
-                    <div className="border-t pt-2 mt-3">
-                      <div className="text-xs text-muted-foreground mb-1">Best & Worst</div>
-                      {latest.totals.best_call && (
-                        <div className="flex justify-between text-xs">
-                          <span>🏆 {latest.totals.best_call.ticker}</span>
-                          <span className="text-emerald-600 font-bold">+${latest.totals.best_call.pnl.toFixed(0)}</span>
-                        </div>
-                      )}
-                      {latest.totals.worst_call && (
-                        <div className="flex justify-between text-xs">
-                          <span>💥 {latest.totals.worst_call.ticker}</span>
-                          <span className="text-rose-600 font-bold">${latest.totals.worst_call.pnl.toFixed(0)}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Metrics will appear after we have prediction vs actual data pairs.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-       
-      </div>
-
       {/* Test Results */}
       {testLog.length > 0 && (
         <Card>

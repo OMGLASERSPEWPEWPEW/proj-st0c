@@ -68,6 +68,7 @@ export type TrackerJson = {
   tickers: Record<string, TickerSnapshot>;
   benchmarks?: Record<string, BenchmarkValue>;
   prices?: Record<string, OHLCVData>;
+  ml_predictions?: Record<string, MLPrediction>;  // <-- Add this line
   macro_watch?: MacroEvent[];
   sources?: NewsSource[];
   labels?: {
@@ -93,7 +94,15 @@ export type TrackerJson = {
     } | null;
   };
   notes?: string;
-  
+};
+
+export type MLPrediction = {
+  predicted_next_day_pct?: number;
+  confidence?: number;
+  correct?: boolean | null;
+  daily_pnl?: number;
+  quality_score?: number;
+  abs_error_pct?: number;
 };
 
 export type ChartRow = {

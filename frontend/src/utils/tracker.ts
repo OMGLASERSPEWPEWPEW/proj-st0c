@@ -332,13 +332,25 @@ export function calculateDailyMetrics(
   
   // Simulate P&L: if we followed the prediction
   let dailyPnL = 0;
-  if (Math.abs(predicted) > FLAT_THRESHOLD) { // Only trade if prediction is meaningful
-    const predictedReturn = predicted / 100; // convert to decimal
-    const actualReturn = actual / 100;
-    const direction = predicted > 0 ? 1 : -1; // 1 for long, -1 for short
-    
-    // P&L = position_size * direction * actual_return - transaction_costs
-    const grossPnL = BASE_POSITION_SIZE * direction * actualReturn;
+  
+  // Determine trading direction: Use call first, then predicted direction
+  let tradeDirection = 0; // 0 = no trade, 1 = long, -1 = short
+  
+  if (call === "Positive") {
+    tradeDirection = 1;
+  } else if (call === "Negative") {
+    tradeDirection = -1;
+  } else if (call === "Neutral") {
+    tradeDirection = 0; // No trade on neutral call
+  } else if (Math.abs(predicted) > FLAT_THRESHOLD) {
+    // Fallback to predicted direction when no call
+    tradeDirection = predicted > 0 ? 1 : -1;
+  }
+  
+  // Calculate P&L only if we took a position
+  if (tradeDirection !== 0) {
+    const actualReturn = actual / 100; // convert to decimal
+    const grossPnL = BASE_POSITION_SIZE * tradeDirection * actualReturn;
     const transactionCost = BASE_POSITION_SIZE * (TRANSACTION_COST_BPS / 10000);
     dailyPnL = grossPnL - transactionCost;
   }
@@ -367,20 +379,19 @@ export function isDirectionCorrect(
   const actualIsDown = actual < -FLAT_THRESHOLD;
   const actualIsFlat = Math.abs(actual) <= FLAT_THRESHOLD;
   
-  const predictedIsUp = predicted > FLAT_THRESHOLD;
-  const predictedIsDown = predicted < -FLAT_THRESHOLD;
-  
-  // Use call if available, otherwise use predicted direction
+  // Primary logic: Use call if available, otherwise use predicted direction
   if (call === "Positive") return actualIsUp;
   if (call === "Negative") return actualIsDown; 
   if (call === "Neutral") return actualIsFlat;
   
-  // Fallback to predicted direction
+  // Fallback to predicted direction when no call is provided
+  const predictedIsUp = predicted > FLAT_THRESHOLD;
+  const predictedIsDown = predicted < -FLAT_THRESHOLD;
+  
   if (predictedIsUp) return actualIsUp;
   if (predictedIsDown) return actualIsDown;
   return actualIsFlat; // predicted flat
 }
-
 export function calculateRunningMetrics(history: TrackerJson[]): {
   total_pnl: number;
   avg_abs_error: number;
@@ -480,28 +491,41 @@ export function computePhase1Metrics(history: TrackerJson[]): TrackerJson[] {
     const updatedTickers = { ...entry.tickers };
     
     // For each ticker, compute metrics based on yesterday's prediction vs today's actual
+    // For each ticker, compute metrics based on yesterday's prediction vs today's actual
     Object.keys(updatedTickers).forEach(ticker => {
       const prevInfo = prevEntry.tickers[ticker];
       const currentInfo = updatedTickers[ticker];
       
-      if (prevInfo && currentInfo && 
-          typeof prevInfo.predicted_next_day_pct === 'number' &&
-          typeof currentInfo.pct_change === 'number') {
+      // Enhanced validation: ensure we have both prediction and actual data
+      const hasPrediction = prevInfo && (
+        typeof prevInfo.predicted_next_day_pct === 'number' || 
+        prevInfo.call // Accept calls even without numeric predictions
+      );
+      const hasActual = currentInfo && typeof currentInfo.pct_change === 'number';
+      
+      if (hasPrediction && hasActual) {
+        // Use 0 as default prediction if only call is available
+        const prediction = typeof prevInfo.predicted_next_day_pct === 'number' 
+          ? prevInfo.predicted_next_day_pct 
+          : 0;
         
+        // Ensure we have a valid actual percentage change
+        const actualChange = currentInfo.pct_change!; // Non-null assertion since hasActual validates this
+            
         const metrics = calculateDailyMetrics(
-          prevInfo.predicted_next_day_pct,
-          currentInfo.pct_change,
+          prediction,
+          actualChange,  // <- Now guaranteed to be a number
           prevInfo.call
         );
-        
-        updatedTickers[ticker] = {
-          ...currentInfo,
-          abs_error_pct: metrics.abs_error_pct,
-          daily_pnl: metrics.daily_pnl,
-          quality_score: metrics.quality_score,
-          correct: metrics.direction_correct
-        };
-      }
+      
+      updatedTickers[ticker] = {
+        ...currentInfo,
+        abs_error_pct: metrics.abs_error_pct,
+        daily_pnl: metrics.daily_pnl,
+        quality_score: metrics.quality_score,
+        correct: metrics.direction_correct
+      };
+    }
     });
     
     return { ...entry, tickers: updatedTickers };
@@ -529,5 +553,74 @@ export function computePhase1Metrics(history: TrackerJson[]): TrackerJson[] {
   
   return updated;
 }
+
+export function calculateMLDayMetrics(entry: TrackerJson): {
+  day_pnl: number;
+  day_hits: number;
+  day_trades: number;
+  day_avg_error: number;
+  day_avg_quality: number;
+} {
+  let totalPnL = 0;
+  let totalHits = 0;
+  let totalTrades = 0;
+  let totalError = 0;
+  let totalQuality = 0;
+
+  if (entry.ml_predictions) {
+    Object.values(entry.ml_predictions).forEach(mlInfo => {
+      if (typeof mlInfo.daily_pnl === 'number') {
+        totalPnL += mlInfo.daily_pnl;
+        totalTrades++;
+        if (mlInfo.correct) totalHits++;
+        if (typeof mlInfo.abs_error_pct === 'number') totalError += mlInfo.abs_error_pct;
+        if (typeof mlInfo.quality_score === 'number') totalQuality += mlInfo.quality_score;
+      }
+    });
+  }
+
+  return {
+    day_pnl: totalPnL,
+    day_hits: totalHits,
+    day_trades: totalTrades,
+    day_avg_error: totalTrades > 0 ? totalError / totalTrades : 0,
+    day_avg_quality: totalTrades > 0 ? totalQuality / totalTrades : 0
+  };
+}
+
+export function calculateMLRunningMetrics(history: TrackerJson[]): {
+  total_pnl: number;
+  hit_rate: number;
+  avg_quality_score: number;
+  avg_abs_error: number;
+} {
+  let totalPnL = 0;
+  let correctCount = 0;
+  let totalCount = 0;
+  let totalError = 0;
+  let totalQuality = 0;
+
+  history.forEach(entry => {
+    if (entry.ml_predictions) {
+      Object.values(entry.ml_predictions).forEach(mlInfo => {
+        if (typeof mlInfo.daily_pnl === 'number') {
+          totalPnL += mlInfo.daily_pnl;
+          totalCount++;
+          if (mlInfo.correct) correctCount++;
+          if (typeof mlInfo.abs_error_pct === 'number') totalError += mlInfo.abs_error_pct;
+          if (typeof mlInfo.quality_score === 'number') totalQuality += mlInfo.quality_score;
+        }
+      });
+    }
+  });
+
+  return {
+    total_pnl: totalPnL,
+    hit_rate: totalCount > 0 ? correctCount / totalCount : 0,
+    avg_quality_score: totalCount > 0 ? totalQuality / totalCount : 0,
+    avg_abs_error: totalCount > 0 ? totalError / totalCount : 0
+  };
+}
+
 
 // File: frontend/src/utils/tracker.ts - Character count: 4088
