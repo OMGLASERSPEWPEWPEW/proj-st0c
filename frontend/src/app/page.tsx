@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Download, Trash2, PlusCircle, Bug } from "lucide-react";
+import { loadRNNHistoricalPredictions, RNNHistoricalResults } from '@/utils/rnnTracker';
 import {
   LineChart,
   Line,
@@ -58,6 +59,7 @@ export default function TrackerDashboard() {
   const [mlPredictions, setMlPredictions] = useState<Record<string, number> | null>(null);
   const [isLoadingMlPredictions, setIsLoadingMlPredictions] = useState(true);
   const [isPipelineRunning, setIsPipelineRunning] = useState(false);
+  const [rnnHistoricalPredictions, setRnnHistoricalPredictions] = useState<RNNHistoricalResults[]>([]);
   
   // State declarations
   const [history, setHistory] = useState<TrackerJson[]>([]);
@@ -70,27 +72,30 @@ export default function TrackerDashboard() {
   });
   const [testLog, setTestLog] = useState<TestResult[]>([]);
 
-  // Fetch ML predictions on mount
+  // Fetch ML predictions and historical RNN data on mount
   useEffect(() => {
-    // We can remove the console.log statements now
     setIsLoadingMlPredictions(true);
-    fetch('/latest_ml_predictions.json', { cache: 'no-store' })
-      .then(res => {
-        if (!res.ok) { // Handle cases where the file might not be found
-          throw new Error('Network response was not ok');
-        }
-        return res.json();
-      })
-      .then(data => {
-        setMlPredictions(data.ml_predictions);
-      })
-      .catch(err => {
-        console.error("Failed to load ML predictions:", err);
-        setMlPredictions(null); // Clear out old predictions on failure
-      })
-      .finally(() => {
-        setIsLoadingMlPredictions(false); // <-- ADD THIS
-      });
+    
+    Promise.all([
+      // Load today's ML predictions
+      fetch('/latest_ml_predictions.json')
+        .then(res => res.json())
+        .then(data => data.ml_predictions || {}),
+      
+      // Load historical RNN predictions
+      loadRNNHistoricalPredictions()
+    ])
+    .then(([currentPredictions, historicalPredictions]) => {
+      console.log('TrackerDashboard.useEffect: Loaded current predictions and', historicalPredictions.length, 'historical predictions');
+      setMlPredictions(currentPredictions);
+      setRnnHistoricalPredictions(historicalPredictions);
+    })
+    .catch(error => {
+      console.error('TrackerDashboard.useEffect: Error loading ML data:', error);
+    })
+    .finally(() => {
+      setIsLoadingMlPredictions(false);
+    });
   }, []);
 
   // Load history on mount
@@ -819,7 +824,7 @@ async function loadFromDataRaw() {
         </CardContent>
       </Card>
 
-      {/* Prediction Performance Tracker: ChatGPT-RNN  */}
+      {/* Prediction Performance Tracker: ChatGPT-RNN */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center justify-between">
@@ -835,175 +840,164 @@ async function loadFromDataRaw() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {/* Ticker Breakdown - Always Show */}
-            <div className="space-y-2">
-              <div className="text-xs text-muted-foreground font-semibold">Latest ML Results</div>
-              <div className="grid grid-cols-6 font-semibold text-xs border-b pb-1">
-                <div>Ticker</div>
-                <div>Predicted</div>
-                <div>Actual</div>
-                <div>Error</div>
-                <div>Result</div>
-                <div>P&L</div>
-              </div>
-              {(["OKLO", "RKLB"] as const).map((t) => {
-                const prevMlPred = prev?.ml_predictions?.[t];
-                const currInfo = latest?.tickers[t];
-                const currMlInfo = latest?.ml_predictions?.[t];
-                
-                // Get what data we can
-                const predicted = prevMlPred?.predicted_next_day_pct || 0;
-                const actual = currInfo?.pct_change || 0;
-                const error = prevMlPred && currInfo ? Math.abs(predicted - actual) : 0;
-                const correct = currMlInfo?.correct;
-                const pnl = currMlInfo?.daily_pnl;
-                const hasHistoricalData = prevMlPred && currInfo;
+          {(() => {
+            // Get the most recent RNN prediction with actual results
+            const rnnWithResults = rnnHistoricalPredictions.filter(rnn => 
+              Object.values(rnn.predictions).some(p => p.actual_pct_change !== undefined)
+            );
+            const latestRnn = rnnWithResults[rnnWithResults.length - 1];
+            
+            // Calculate all-time RNN metrics
+            let totalPnL = 0, correctCount = 0, totalCount = 0, totalError = 0, totalQuality = 0;
+            rnnWithResults.forEach(rnn => {
+              Object.values(rnn.predictions).forEach(pred => {
+                if (pred.daily_pnl !== undefined) {
+                  totalPnL += pred.daily_pnl;
+                  totalError += pred.abs_error_pct || 0;
+                  totalQuality += pred.quality_score || 0;
+                  totalCount++;
+                  if (pred.correct) correctCount++;
+                }
+              });
+            });
+            
+            const hasData = totalCount > 0;
+            
+            return (
+              <div className="space-y-4">
+                {/* Ticker Breakdown */}
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground font-semibold">Latest ML Results</div>
+                  <div className="grid grid-cols-6 font-semibold text-xs border-b pb-1">
+                    <div>Ticker</div>
+                    <div>Predicted</div>
+                    <div>Actual</div>
+                    <div>Error</div>
+                    <div>Result</div>
+                    <div>P&L</div>
+                  </div>
+                  {(["OKLO", "RKLB"] as const).map((ticker) => {
+                    const rnnPred = latestRnn?.predictions[ticker];
+                    const predicted = rnnPred?.predicted_next_day_pct;
+                    const actual = rnnPred?.actual_pct_change;
+                    const error = rnnPred?.abs_error_pct;
+                    const correct = rnnPred?.correct;
+                    const pnl = rnnPred?.daily_pnl;
 
-                return (
-                  <div key={t} className="grid grid-cols-6 text-xs items-center">
-                    <div className="font-mono">{t}</div>
-                    <div className={hasHistoricalData ? (predicted >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                      {hasHistoricalData ? pctText(predicted) : "No data"}
-                    </div>
-                    <div className={currInfo ? (actual >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                      {currInfo ? pctText(actual) : "No data"}
-                    </div>
-                    <div className={hasHistoricalData ? "text-muted-foreground" : "text-muted-foreground"}>
-                      {hasHistoricalData ? `${error.toFixed(2)}%` : "—"}
-                    </div>
-                    <div className={correct !== undefined ? (correct ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
-                      {correct !== undefined ? 
-                        `${correct ? "✓" : "✗"} ${currMlInfo?.quality_score?.toFixed(0) || 0}/100` : 
-                        "No data"
-                      }
-                    </div>
-                    <div className={pnl !== undefined ? 
-                      `font-bold ${pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
-                      "text-muted-foreground"
-                    }>
-                      {pnl !== undefined ? `$${pnl.toFixed(0)}` : "—"}
+                    return (
+                      <div key={ticker} className="grid grid-cols-6 text-xs items-center">
+                        <div className="font-mono">{ticker}</div>
+                        <div className={rnnPred ? (predicted >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                          {rnnPred ? pctText(predicted) : "No data"}
+                        </div>
+                        <div className={actual !== undefined ? (actual >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                          {actual !== undefined ? pctText(actual) : "No data"}
+                        </div>
+                        <div className={error !== undefined ? "text-muted-foreground" : "text-muted-foreground"}>
+                          {error !== undefined ? `${error.toFixed(1)}%` : "—"}
+                        </div>
+                        <div className={correct !== undefined ? (correct ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                          {correct !== undefined ? (correct ? "✓" : "✗") : "—"}
+                        </div>
+                        <div className={pnl !== undefined ? (pnl >= 0 ? "text-emerald-600" : "text-rose-600") : "text-muted-foreground"}>
+                          {pnl !== undefined ? `$${pnl}` : "—"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Today's ML Performance */}
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground font-semibold">Today's ML Performance</div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span>P&L:</span>
+                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
+                          {latestRnn ? `$${Object.values(latestRnn.predictions).reduce((sum, p) => sum + (p.daily_pnl || 0), 0)}` : "No data"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Hit Rate:</span>
+                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
+                          {latestRnn ? `${Math.round(Object.values(latestRnn.predictions).filter(p => p.correct).length / Object.values(latestRnn.predictions).filter(p => p.correct !== undefined).length * 100)}%` : "No data"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Avg Error:</span>
+                        <span className={latestRnn ? "font-semibold" : "text-muted-foreground"}>
+                          {latestRnn ? `${(Object.values(latestRnn.predictions).reduce((sum, p) => sum + (p.abs_error_pct || 0), 0) / Object.values(latestRnn.predictions).filter(p => p.abs_error_pct !== undefined).length).toFixed(1)}%` : "No data"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
 
-            {/* ML Performance Metrics - Always Show */}
-            <div className="grid grid-cols-2 gap-4 border-t pt-3">
-              {/* Current ML Stats */}
-              <div>
-                <div className="text-xs text-muted-foreground font-semibold mb-2">Today's ML Performance</div>
-                <div className="space-y-1 text-xs">
-                  {(() => {
-                    const hasData = latest?.ml_predictions;
-                    const mlMetrics = hasData ? calculateMLDayMetrics(latest) : null;
-                    
-                    return (
-                      <>
-                        <div className="flex justify-between">
-                          <span>P&L:</span>
-                          <span className={hasData && mlMetrics ? 
-                            `font-semibold ${mlMetrics.day_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
-                            'text-muted-foreground'
-                          }>
-                            {hasData && mlMetrics ? `$${mlMetrics.day_pnl.toFixed(0)}` : "No data"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Hit Rate:</span>
-                          <span className={hasData && mlMetrics ? 'font-semibold' : 'text-muted-foreground'}>
-                            {hasData && mlMetrics && mlMetrics.day_trades > 0 ? 
-                              `${((mlMetrics.day_hits / mlMetrics.day_trades) * 100).toFixed(0)}%` : 
-                              "No data"
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Avg Error:</span>
-                          <span className={hasData && mlMetrics ? 'font-mono' : 'text-muted-foreground'}>
-                            {hasData && mlMetrics ? `${mlMetrics.day_avg_error.toFixed(2)}%` : "No data"}
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
+                  <div></div> {/* Spacer */}
 
-              {/* All-Time ML Stats */}
-              <div>
-                <div className="text-xs text-muted-foreground font-semibold mb-2">All-Time ML</div>
-                <div className="space-y-1 text-xs">
-                  {(() => {
-                    const hasHistoricalData = history.some(entry => entry.ml_predictions);
-                    const allTimeMl = hasHistoricalData ? calculateMLRunningMetrics(history) : null;
-                    
-                    return (
-                      <>
-                        <div className="flex justify-between">
-                          <span>Total P&L:</span>
-                          <span className={hasHistoricalData && allTimeMl ? 
-                            `font-semibold ${allTimeMl.total_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 
-                            'text-muted-foreground'
-                          }>
-                            {hasHistoricalData && allTimeMl ? `$${allTimeMl.total_pnl.toFixed(0)}` : "No data"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Hit Rate:</span>
-                          <span className={hasHistoricalData && allTimeMl ? 'font-semibold' : 'text-muted-foreground'}>
-                            {hasHistoricalData && allTimeMl ? `${(allTimeMl.hit_rate * 100).toFixed(0)}%` : "No data"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Quality:</span>
-                          <span className={hasHistoricalData && allTimeMl ? 'font-semibold' : 'text-muted-foreground'}>
-                            {hasHistoricalData && allTimeMl ? `${allTimeMl.avg_quality_score.toFixed(0)}/100` : "No data"}
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Current ML Predictions for Tomorrow - Show if available */}
-            <div className="border-t pt-3">
-              <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
-              {isLoadingMlPredictions ? (
-                <div className="text-sm text-muted-foreground">Loading predictions...</div>
-              ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(mlPredictions).map(([ticker, prediction]) => (
-                    <div key={ticker} className="flex justify-between text-sm">
-                      <span className="font-mono">{ticker}:</span>
-                      <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {pctText(prediction)}
-                      </span>
+                  {/* All-Time ML */}
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground font-semibold">All-Time ML</div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span>Total P&L:</span>
+                        <span className={hasData ? `font-semibold ${totalPnL >= 0 ? 'text-emerald-600' : 'text-rose-600'}` : 'text-muted-foreground'}>
+                          {hasData ? `$${totalPnL}` : "No data"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Hit Rate:</span>
+                        <span className={hasData ? 'font-semibold' : 'text-muted-foreground'}>
+                          {hasData ? `${Math.round(correctCount / totalCount * 100)}%` : "No data"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Quality:</span>
+                        <span className={hasData ? 'font-semibold' : 'text-muted-foreground'}>
+                          {hasData ? `${Math.round(totalQuality / totalCount)}/100` : "No data"}
+                        </span>
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {(["OKLO", "RKLB"] as const).map((ticker) => (
-                    <div key={ticker} className="flex justify-between text-sm">
-                      <span className="font-mono">{ticker}:</span>
-                      <span className="text-muted-foreground">No prediction</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Data Status Message */}
-            {!history.some(entry => entry.ml_predictions) && (
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                Start saving ML predictions daily to enable performance tracking and historical comparison.
+                {/* Tomorrow's ML Predictions */}
+                <div className="border-t pt-3">
+                  <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
+                  {isLoadingMlPredictions ? (
+                    <div className="text-sm text-muted-foreground">Loading predictions...</div>
+                  ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(mlPredictions).map(([ticker, prediction]) => (
+                        <div key={ticker} className="flex justify-between text-sm">
+                          <span className="font-mono">{ticker}:</span>
+                          <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {pctText(prediction)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["OKLO", "RKLB"] as const).map((ticker) => (
+                        <div key={ticker} className="flex justify-between text-sm">
+                          <span className="font-mono">{ticker}:</span>
+                          <span className="text-muted-foreground">No prediction</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Data Status Message */}
+                {!hasData && (
+                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                    RNN predictions need at least one day of actual results to calculate performance metrics.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </CardContent>
       </Card>
       

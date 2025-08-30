@@ -73,5 +73,10 @@ def main():
         
     print(f"--- Pipeline complete! Predictions saved to {output_path} ---")
 
+    # 5. Save daily predictions with metadata for historical tracking
+    print("--- Step 5: Saving daily predictions for historical tracking ---")
+    save_daily_script = os.path.join('ml', 'scripts', 'save_daily_prediction.py')
+    run_command([PYTHON_EXECUTABLE, '-m', 'ml.scripts.save_daily_prediction'])
+
 if __name__ == "__main__":
     main()
