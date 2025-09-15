@@ -40,6 +40,7 @@ import {
   mergeHistory,
   toChartRowsActualOnly,
   withPredictions,
+  withRNNPredictions,
   normalizeRows,
   isWeekendDate,
   pctText,
@@ -47,11 +48,16 @@ import {
   actionBadgeClass,
   deriveVerdict,
   COLOR_BY_SERIES,
+  RNN_PREDICTION_COLORS,
   legendFormatter,
   computePhase1Metrics,
   calculateDayMetrics,
   calculateMLDayMetrics,
-  calculateMLRunningMetrics  
+  calculateMLRunningMetrics,
+  calculateRNNDayMetrics,
+  calculateRNNRunningMetrics,
+  getNextBusinessDay,
+  calculateDailyMetrics  
 } from '@/utils/tracker';
 
 export default function TrackerDashboard() {
@@ -149,7 +155,10 @@ export default function TrackerDashboard() {
     allKeys.forEach((k) => {
       if (show[k]) {
         list.push(k);
-        if (showPred) list.push(`${k}_PRED`); // Only add prediction if base stock is shown
+        if (showPred) {
+          list.push(`${k}_PRED`); // OAI predictions
+          list.push(`${k}_RNN_PRED`); // RNN predictions
+        }
       }
     });
     console.log('TrackerDashboard.activeSeries: Active series for chart:', list);
@@ -168,9 +177,9 @@ export default function TrackerDashboard() {
   }, [baseRows, history]);
 
   const chartRows = useMemo(() => {
-    const rows = rowsWithPred;
+    let rows = withRNNPredictions(rowsWithPred, rnnHistoricalPredictions, history);
     return normalize ? normalizeRows(rows.map((r) => ({ ...r })), activeSeries) : rows;
-  }, [rowsWithPred, normalize, activeSeries]);
+  }, [rowsWithPred, rnnHistoricalPredictions, history, normalize, activeSeries]);
 
   // Compute dynamic Y-axis domain based on visible data
   const yAxisDomain = useMemo(() => {
@@ -183,14 +192,16 @@ export default function TrackerDashboard() {
     let min = Infinity;
     let max = -Infinity;
 
-    // Only consider active series for domain calculation
-    const activeDataSeries = activeSeries.filter(key => !key.endsWith('_PRED')); // Focus on actual data for primary scaling
-    
+   // Only consider active series for domain calculation - exclude all prediction types
+    const activeDataSeries = activeSeries.filter(key => 
+      !key.endsWith('_PRED') && !key.endsWith('_RNN_PRED')
+    ); // Focus on actual data for primary scaling
+
     if (activeDataSeries.length === 0) {
       return [0, 100]; // fallback when only predictions are shown
     }
 
-    chartRows.forEach(row => {
+    chartRows.forEach((row: ChartRow) => {
       activeDataSeries.forEach(seriesKey => {
         const value = row[seriesKey];
         if (typeof value === 'number' && isFinite(value)) {
@@ -503,9 +514,17 @@ async function loadFromDataRaw() {
                   key={key}
                   type="monotone"
                   dataKey={key}
-                  stroke={COLOR_BY_SERIES[key.replace("_PRED", "")] || undefined}
-                  dot={key.endsWith("_PRED")}
-                  strokeDasharray={key.endsWith("_PRED") ? "5 5" : undefined}
+                  stroke={
+                    key.endsWith("_RNN_PRED") 
+                      ? RNN_PREDICTION_COLORS[key.replace("_RNN_PRED", "")] || "#16a34a"
+                      : COLOR_BY_SERIES[key.replace("_PRED", "")] || undefined
+                  }
+                  dot={key.endsWith("_PRED") || key.endsWith("_RNN_PRED")}
+                  strokeDasharray={
+                    key.endsWith("_RNN_PRED") ? "2 2" : // Short dashes for RNN
+                    key.endsWith("_PRED") ? "5 5" : // Long dashes for OAI
+                    "0" // Solid for actual
+                  }
                   strokeWidth={2}
                   isAnimationActive={false}
                 />
@@ -658,10 +677,10 @@ async function loadFromDataRaw() {
         </Card>
       )}
 
-      {/* Prediction Performance Tracker: ChatGPT */}
+      {/* Prediction Performance Tracker: OAI */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Prediction Performance Tracker: ChatGPT</CardTitle>
+          <CardTitle className="text-lg">Prediction Performance Tracker: OAI</CardTitle>
         </CardHeader>
         <CardContent>
           {prev && latest ? (
@@ -824,114 +843,113 @@ async function loadFromDataRaw() {
         </CardContent>
       </Card>
 
-      {/* Prediction Performance Tracker: ChatGPT-RNN */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center justify-between">
-            Prediction Performance Tracker: ChatGPT-RNN
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={handleRunPipeline}
-              disabled={isPipelineRunning}
-            >
-              {isPipelineRunning ? 'Running...' : 'Re-run Pipeline'}
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Debug Info */}
-            <div className="text-xs text-gray-500">
-              RNN Historical Predictions: {rnnHistoricalPredictions.length} loaded
+      {/* RNN Performance Tracker */}
+        <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    Prediction Performance Tracker: RNN
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleRunPipeline}
+                      disabled={isPipelineRunning}
+                    >
+                      {isPipelineRunning ? 'Running...' : 'Re-run Pipeline'}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+          <CardContent>
+    {rnnHistoricalPredictions.length > 0 ? (() => {
+      const rnnRunningMetrics = calculateRNNRunningMetrics(rnnHistoricalPredictions, history);
+      const todayRNNMetrics = calculateRNNDayMetrics(rnnHistoricalPredictions, history, latest?.date || '');
+      const yesterdayDate = prev?.date || '';
+      const yesterdayRNNMetrics = calculateRNNDayMetrics(rnnHistoricalPredictions, history, yesterdayDate);
+
+      return (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            RNN Historical Predictions: {rnnHistoricalPredictions.length} loaded
+          </p>
+
+          {/* Latest RNN Results */}
+          <div>
+            <h4 className="font-medium mb-2">Latest RNN Results</h4>
+            <div className="grid grid-cols-5 gap-2 text-xs font-medium text-muted-foreground border-b pb-1 mb-2">
+              <div>Ticker</div>
+              <div>Predicted</div>
+              <div>Actual</div>
+              <div>Result</div>
+              <div>P&L</div>
             </div>
-            
-            {rnnHistoricalPredictions.length > 0 ? (
-              <>
-                {/* Latest RNN Predictions */}
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground font-semibold">Latest RNN Results</div>
-                  <div className="grid grid-cols-3 font-semibold text-xs border-b pb-1">
-                    <div>Ticker</div>
-                    <div>Date</div>
-                    <div>Predicted</div>
-                  </div>
-                  
-                  {/* Show the most recent prediction */}
-                  {(() => {
-                    const latest = rnnHistoricalPredictions[rnnHistoricalPredictions.length - 1];
-                    if (!latest) return <div>No predictions</div>;
-                    
-                    return Object.entries(latest.predictions).map(([ticker, pred]) => (
-                      <div key={ticker} className="grid grid-cols-3 text-xs items-center">
-                        <div className="font-mono">{ticker}</div>
-                        <div>{latest.date}</div>
-                        <div className={pred.predicted_next_day_pct >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                          {pctText(pred.predicted_next_day_pct)}
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-
-                {/* All Historical Predictions */}
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground font-semibold">Historical RNN Predictions</div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {rnnHistoricalPredictions.map((rnn) => (
-                      <div key={rnn.date} className="text-xs border-b pb-1">
-                        <div className="font-semibold">{rnn.date}</div>
-                        <div className="grid grid-cols-2 gap-2 pl-2">
-                          {Object.entries(rnn.predictions).map(([ticker, pred]) => (
-                            <div key={ticker} className="flex justify-between">
-                              <span className="font-mono">{ticker}:</span>
-                              <span className={pred.predicted_next_day_pct >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                                {pctText(pred.predicted_next_day_pct)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No RNN predictions found. Run the pipeline to generate predictions.
-              </div>
-            )}
-
-            {/* Tomorrow's ML Predictions - Current predictions from latest_ml_predictions.json */}
-            <div className="border-t pt-3">
-              <div className="text-xs text-muted-foreground font-semibold mb-2">Tomorrow's ML Predictions</div>
-              {isLoadingMlPredictions ? (
-                <div className="text-sm text-muted-foreground">Loading predictions...</div>
-              ) : mlPredictions && Object.keys(mlPredictions).length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(mlPredictions).map(([ticker, prediction]) => (
-                    <div key={ticker} className="flex justify-between text-sm">
-                      <span className="font-mono">{ticker}:</span>
-                      <span className={`font-semibold ${(prediction || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {pctText(prediction)}
-                      </span>
+            {latest && (() => {
+              const latestRNN = rnnHistoricalPredictions.find(p => {
+                const nextDay = getNextBusinessDay(p.date);
+                return nextDay === latest.date;
+              });
+              
+              if (!latestRNN) return <div className="text-xs text-muted-foreground">No RNN predictions for latest results</div>;
+              
+              return Object.entries(latestRNN.predictions).map(([ticker, pred]: [string, any]) => {
+                const actualInfo = latest.tickers[ticker];
+                if (!actualInfo) return null;
+                
+                const predicted = pred.predicted_next_day_pct;
+                const actual = actualInfo.pct_change || 0;
+                const metrics = calculateDailyMetrics(predicted, actual);
+                
+                return (
+                  <div key={ticker} className="grid grid-cols-5 gap-2 text-xs">
+                    <div className="font-mono">{ticker}</div>
+                    <div>{pctText(predicted)}</div>
+                    <div className={actual > 0 ? "text-emerald-600" : "text-rose-600"}>
+                      {pctText(actual)}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {(["OKLO", "RKLB"] as const).map((ticker) => (
-                    <div key={ticker} className="flex justify-between text-sm">
-                      <span className="font-mono">{ticker}:</span>
-                      <span className="text-muted-foreground">No prediction</span>
+                    <div className={metrics.direction_correct ? "text-emerald-600" : "text-rose-600"}>
+                      {metrics.direction_correct ? "✓" : "✗"} {Math.round(metrics.quality_score)}/100
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className={metrics.daily_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                      ${metrics.daily_pnl >= 0 ? '+' : ''}${Math.round(metrics.daily_pnl)}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {/* Performance Summary */}
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-xs text-muted-foreground">Yesterday</div>
+              <div className="text-sm">P&L: ${Math.round(yesterdayRNNMetrics.day_pnl)}</div>
+              <div className="text-sm">Hit Rate: {Math.round(yesterdayRNNMetrics.day_trades > 0 ? (yesterdayRNNMetrics.day_hits / yesterdayRNNMetrics.day_trades) * 100 : 0)}%</div>
+              <div className="text-sm">Quality: {Math.round(yesterdayRNNMetrics.day_avg_quality)}/100</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Today</div>
+              <div className="text-sm">P&L: ${Math.round(todayRNNMetrics.day_pnl)}</div>
+              <div className="text-sm">Hit Rate: {Math.round(todayRNNMetrics.day_trades > 0 ? (todayRNNMetrics.day_hits / todayRNNMetrics.day_trades) * 100 : 0)}%</div>
+              <div className="text-sm">Quality: {Math.round(todayRNNMetrics.day_avg_quality)}/100</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">All-Time ({rnnRunningMetrics.trade_count} trades)</div>
+              <div className="text-sm">Total P&L: ${Math.round(rnnRunningMetrics.total_pnl)}</div>
+              <div className="text-sm">Hit Rate: {Math.round(rnnRunningMetrics.hit_rate * 100)}%</div>
+              <div className="text-sm">Quality: {Math.round(rnnRunningMetrics.avg_quality_score)}/100</div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Best/Worst */}
+          <div className="flex justify-center gap-8 text-xs">
+            <div>🏆 {rnnRunningMetrics.best_call?.ticker}:+${Math.round(rnnRunningMetrics.best_call?.pnl || 0)}</div>
+            <div>💥 {rnnRunningMetrics.worst_call?.ticker}:${Math.round(rnnRunningMetrics.worst_call?.pnl || 0)}</div>
+          </div>
+        </div>
+      );
+    })() : (
+      <p className="text-sm text-muted-foreground">No RNN historical predictions available</p>
+    )}
+  </CardContent>
+</Card>
       
 
       {/* Enhanced Ticker Details */}
@@ -954,7 +972,9 @@ async function loadFromDataRaw() {
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <span className="text-muted-foreground">Close:</span>
-                        <span className="font-mono ml-2">${info.close.toFixed(2)}</span>
+                        <span className="font-mono ml-2">
+                          ${info.close !== null && info.close !== undefined ? info.close.toFixed(2) : '—'}
+                        </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Change:</span>

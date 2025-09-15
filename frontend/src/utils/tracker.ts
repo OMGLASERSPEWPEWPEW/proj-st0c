@@ -194,7 +194,7 @@ export function withPredictions(baseRows: ChartRow[], history: TrackerJson[]): C
     
     Object.entries(lastEntry.benchmarks || {}).forEach(([ticker, val]) => {
       const close = typeof val === 'number' ? val : (val as any)?.close;
-      const predPct = typeof val === 'object' ? val.predicted_next_day_pct : undefined;
+      const predPct = (typeof val === 'object' && val !== null) ? val.predicted_next_day_pct : undefined;
       if (typeof close === 'number' && typeof predPct === 'number') {
         futureRow[`${ticker}_PRED`] = close * (1 + predPct / 100);
       }
@@ -260,6 +260,8 @@ export function getNextTradeDate(currentDate: string): string {
   return next.toISOString().split('T')[0];
 }
 
+
+
 // =============================
 // Formatting Utilities
 // =============================
@@ -308,8 +310,15 @@ export const COLOR_BY_SERIES: Record<string, string> = {
   VIXM: "#db2777",     // pink
 };
 
+export const RNN_PREDICTION_COLORS: Record<string, string> = {
+  OKLO: "#16a34a",     // green
+  RKLB: "#16a34a",     // green
+  SPY: "#16a34a",      // green
+};
+
 export function legendFormatter(value: string): string {
-  if (value.endsWith("_PRED")) return `${value.replace("_PRED", "")} (pred)`;
+  if (value.endsWith("_RNN_PRED")) return `${value.replace("_RNN_PRED", "")} (RNN-pred)`;
+  if (value.endsWith("_PRED")) return `${value.replace("_PRED", "")} (OAI-pred)`;
   return `${value} (actual)`;
 }
 
@@ -620,6 +629,182 @@ export function calculateMLRunningMetrics(history: TrackerJson[]): {
     avg_quality_score: totalCount > 0 ? totalQuality / totalCount : 0,
     avg_abs_error: totalCount > 0 ? totalError / totalCount : 0
   };
+}
+
+export function withRNNPredictions(
+  rows: ChartRow[], 
+  rnnHistoricalPredictions: any[],
+  history: TrackerJson[]
+): ChartRow[] {
+  console.log('tracker.withRNNPredictions: Adding RNN predictions to', rows.length, 'chart rows');
+  console.log('tracker.withRNNPredictions: RNN data:', rnnHistoricalPredictions);
+  
+  // Create a map of dates to RNN predictions
+  const rnnMap: Record<string, Record<string, number>> = {};
+  rnnHistoricalPredictions.forEach(rnnData => {
+    rnnMap[rnnData.date] = {};
+    Object.entries(rnnData.predictions).forEach(([ticker, pred]: [string, any]) => {
+      rnnMap[rnnData.date][ticker] = pred.predicted_next_day_pct;
+    });
+  });
+  
+  // Create a map of dates to actual stock prices from history
+  const priceMap: Record<string, Record<string, number>> = {};
+  history.forEach(entry => {
+    priceMap[entry.date] = {};
+    Object.entries(entry.tickers).forEach(([ticker, info]) => {
+      if (info.close) {
+        priceMap[entry.date][ticker] = info.close;
+      }
+    });
+  });
+  
+  // Add RNN predictions to chart rows, converting percentages to future prices
+  return rows.map(row => {
+    const newRow = { ...row };
+    const rnnPreds = rnnMap[row.date] || {};
+    const prices = priceMap[row.date] || {};
+    
+    Object.entries(rnnPreds).forEach(([ticker, predictionPct]) => {
+      const currentPrice = prices[ticker];
+      if (typeof currentPrice === 'number' && typeof predictionPct === 'number') {
+        // Convert percentage to future price: current_price * (1 + percentage_change / 100)
+        newRow[`${ticker}_RNN_PRED`] = currentPrice * (1 + predictionPct / 100);
+      }
+    });
+    
+    return newRow;
+  });
+}
+
+// RNN Performance Calculation Functions
+export function calculateRNNDayMetrics(
+  rnnHistoricalPredictions: any[], 
+  history: TrackerJson[], 
+  targetDate: string
+): {
+  day_pnl: number;
+  day_hits: number;
+  day_trades: number;
+  day_avg_error: number;
+  day_avg_quality: number;
+} {
+  const rnnPred = rnnHistoricalPredictions.find(p => p.date === targetDate);
+  if (!rnnPred) {
+    return { day_pnl: 0, day_hits: 0, day_trades: 0, day_avg_error: 0, day_avg_quality: 0 };
+  }
+
+  const nextDay = getNextBusinessDay(targetDate);
+  const actualEntry = history.find(h => h.date === nextDay);
+  if (!actualEntry) {
+    return { day_pnl: 0, day_hits: 0, day_trades: 0, day_avg_error: 0, day_avg_quality: 0 };
+  }
+
+  let totalPnL = 0;
+  let totalHits = 0;
+  let totalTrades = 0;
+  let totalError = 0;
+  let totalQuality = 0;
+
+  Object.entries(rnnPred.predictions).forEach(([ticker, pred]: [string, any]) => {
+    const actualTicker = actualEntry.tickers[ticker];
+    if (actualTicker && typeof actualTicker.pct_change === 'number') {
+      const predicted = pred.predicted_next_day_pct;
+      const actual = actualTicker.pct_change;
+      
+      const metrics = calculateDailyMetrics(predicted, actual);
+      
+      totalPnL += metrics.daily_pnl;
+      totalError += metrics.abs_error_pct;
+      totalQuality += metrics.quality_score;
+      totalTrades++;
+      if (metrics.direction_correct) totalHits++;
+    }
+  });
+
+  return {
+    day_pnl: totalPnL,
+    day_hits: totalHits,
+    day_trades: totalTrades,
+    day_avg_error: totalTrades > 0 ? totalError / totalTrades : 0,
+    day_avg_quality: totalTrades > 0 ? totalQuality / totalTrades : 0
+  };
+}
+
+export function calculateRNNRunningMetrics(
+  rnnHistoricalPredictions: any[], 
+  history: TrackerJson[]
+): {
+  total_pnl: number;
+  hit_rate: number;
+  avg_quality_score: number;
+  avg_abs_error: number;
+  trade_count: number;
+  best_call: { ticker: string; date: string; pnl: number } | null;
+  worst_call: { ticker: string; date: string; pnl: number } | null;
+} {
+  let totalPnL = 0;
+  let correctCount = 0;
+  let totalCount = 0;
+  let totalError = 0;
+  let totalQuality = 0;
+  let bestCall: { ticker: string; date: string; pnl: number } | null = null;
+  let worstCall: { ticker: string; date: string; pnl: number } | null = null;
+
+  rnnHistoricalPredictions.forEach(rnnPred => {
+    const nextDay = getNextBusinessDay(rnnPred.date);
+    const actualEntry = history.find(h => h.date === nextDay);
+    
+    if (actualEntry) {
+      Object.entries(rnnPred.predictions).forEach(([ticker, pred]: [string, any]) => {
+        const actualTicker = actualEntry.tickers[ticker];
+        if (actualTicker && typeof actualTicker.pct_change === 'number') {
+          const predicted = pred.predicted_next_day_pct;
+          const actual = actualTicker.pct_change;
+          
+          const metrics = calculateDailyMetrics(predicted, actual);
+          
+          totalPnL += metrics.daily_pnl;
+          totalError += metrics.abs_error_pct;
+          totalQuality += metrics.quality_score;
+          totalCount++;
+          if (metrics.direction_correct) correctCount++;
+
+          // Track best/worst
+          if (!bestCall || metrics.daily_pnl > bestCall.pnl) {
+            bestCall = { ticker, date: rnnPred.date, pnl: metrics.daily_pnl };
+          }
+          if (!worstCall || metrics.daily_pnl < worstCall.pnl) {
+            worstCall = { ticker, date: rnnPred.date, pnl: metrics.daily_pnl };
+          }
+        }
+      });
+    }
+  });
+
+  return {
+    total_pnl: totalPnL,
+    hit_rate: totalCount > 0 ? correctCount / totalCount : 0,
+    avg_quality_score: totalCount > 0 ? totalQuality / totalCount : 0,
+    avg_abs_error: totalCount > 0 ? totalError / totalCount : 0,
+    trade_count: totalCount,
+    best_call: bestCall,
+    worst_call: worstCall
+  };
+}
+
+
+// Helper function to get next business day
+export function getNextBusinessDay(date: string): string {
+  const d = new Date(date + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  
+  // Skip weekends
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() + 1);
+  }
+  
+  return d.toISOString().split('T')[0];
 }
 
 
