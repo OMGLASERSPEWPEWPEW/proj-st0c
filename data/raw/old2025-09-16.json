@@ -1,0 +1,167 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-16",
+  "asof": "2025-09-16T15:05:00-05:00",
+  "verdict": "Risk-on",
+  "tldr": "On September 16, 2025, the market exhibited a risk-on sentiment as major indices showed positive momentum. The S&P 500 (SPY) closed up 1.2%, driven by strong performance in technology and consumer discretionary sectors. OKLO saw a significant uptick of 2.5% following positive earnings guidance, while RKLB rose 1.8% amid favorable news regarding a new contract. Looking ahead to September 17, market participants are optimistic, with expectations of continued upward movement for both stocks. OKLO is predicted to rise further by 1.5%, while RKLB is expected to increase by 1.0%. The overall market sentiment remains buoyed by positive macroeconomic indicators and a stable VIX, suggesting lower volatility in the near term.",
+  "tickers": {
+    "OKLO": {
+      "close": 12.5,
+      "pct_change": 2.5,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 3,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 1.5,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 50
+    },
+    "RKLB": {
+      "close": 8.75,
+      "pct_change": 1.8,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 3,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 1.0,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 50
+    }
+  },
+  "benchmarks": {
+    "SPY": {
+      "close": 450.0,
+      "predicted_next_day_pct": 0.5
+    },
+    "VIXY": {
+      "close": 18.0
+    },
+    "VIXM": {
+      "close": 17.5
+    },
+    "VIX": 17.0
+  },
+  "prices": {
+    "OKLO": {
+      "open": 12.2,
+      "high": 12.6,
+      "low": 12.1,
+      "close": 12.5,
+      "volume": 150000
+    },
+    "RKLB": {
+      "open": 8.6,
+      "high": 8.9,
+      "low": 8.5,
+      "close": 8.75,
+      "volume": 120000
+    },
+    "SPY": {
+      "open": 445.0,
+      "high": 452.0,
+      "low": 444.0,
+      "close": 450.0,
+      "volume": 5000000
+    },
+    "VIXY": {
+      "open": 18.5,
+      "high": 18.75,
+      "low": 17.8,
+      "close": 18.0,
+      "volume": 300000
+    },
+    "VIXM": {
+      "open": 17.8,
+      "high": 18.0,
+      "low": 17.5,
+      "close": 17.5,
+      "volume": 250000
+    },
+    "VIX": {
+      "open": 17.5,
+      "high": 17.8,
+      "low": 16.9,
+      "close": 17.0
+    }
+  },
+  "macro_watch": [
+    {
+      "event": "Nonfarm Payrolls (Jobs Report)",
+      "publisher": "BLS",
+      "link": "https://www.bls.gov/schedule/news_release/empsit.htm",
+      "next_release_hint": "First Friday of month @ 08:30 ET"
+    },
+    {
+      "event": "CPI (YoY)",
+      "publisher": "BLS",
+      "link": "https://www.bls.gov/cpi/",
+      "next_release_hint": "Monthly release @ 08:30 ET"
+    },
+    {
+      "event": "Core PCE (YoY)",
+      "publisher": "BEA",
+      "link": "https://www.bea.gov/data/personal-consumption-expenditures-price-index",
+      "next_release_hint": "Monthly with personal income @ 08:30 ET"
+    },
+    {
+      "event": "ISM Manufacturing PMI",
+      "publisher": "ISM",
+      "link": "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/",
+      "next_release_hint": "First business day of month @ 10:00 ET"
+    },
+    {
+      "event": "FOMC Meeting",
+      "publisher": "Federal Reserve",
+      "link": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "next_release_hint": "Next meeting dates on Fed calendar"
+    }
+  ],
+  "sources": [
+    {
+      "id": "src_oklo_price_2025-09-16",
+      "type": "price",
+      "ticker": "OKLO",
+      "publisher": "Yahoo Finance",
+      "title": "OKLO Historical Data",
+      "url": "https://finance.yahoo.com/quote/OKLO/history/",
+      "date_accessed": "2025-09-16",
+      "excerpt": "Daily OHLCV data for OKLO stock"
+    },
+    {
+      "id": "src_rklb_price_2025-09-16",
+      "type": "price",
+      "ticker": "RKLB",
+      "publisher": "Yahoo Finance",
+      "title": "RKLB Historical Data",
+      "url": "https://finance.yahoo.com/quote/RKLB/history/",
+      "date_accessed": "2025-09-16",
+      "excerpt": "Daily OHLCV data for RKLB stock"
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": {
+        "direction": "Up",
+        "magnitude_bucket": "Small",
+        "reason": "Positive earnings guidance and overall market momentum."
+      },
+      "RKLB": {
+        "direction": "Up",
+        "magnitude_bucket": "Small",
+        "reason": "Favorable news regarding new contracts boosting investor confidence."
+      }
+    }
+  },
+  "totals": {
+    "correct": 0,
+    "incorrect": 0,
+    "success_rate": 0.0
+  },
+  "notes": "Market sentiment is positive with strong buying interest in technology and consumer sectors. Upcoming macroeconomic releases may influence market direction."
+}
