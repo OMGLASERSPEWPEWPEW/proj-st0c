@@ -11,7 +11,8 @@
 
 # Python / Machine Learning specific
 # ---------------------------------
-# Ignore the virtual environment folder
+# Ignore virtual environment folders
+/venv/
 /ml/venv/
 # Ignore Python cache files
 **pycache**/

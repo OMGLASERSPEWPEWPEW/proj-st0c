@@ -1,0 +1,48 @@
+# File: requirements.txt - Consolidated Python dependencies
+# All Python dependencies for ML processing and OpenAI integration
+
+# OpenAI API client
+openai>=1.58.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Logging and monitoring
+structlog>=23.0.0
+
+# Data manipulation and analysis (existing project dependencies)
+pandas>=2.0.0
+numpy>=1.24.0
+pydantic>=2.0.0
+
+# Scheduling (for daily jobs)
+schedule>=1.2.0
+
+# HTTP requests and error handling
+requests>=2.31.0
+httpx>=0.27.0
+
+# Retry logic and rate limiting
+tenacity>=8.2.0
+
+
+# Date/time handling
+python-dateutil>=2.8.0
+
+# JSON schema validation (for API response validation)
+jsonschema>=4.17.0
+
+# Async support (if needed later)
+asyncio>=3.4.3
+
+# Development tools
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
+# File: requirements.txt - Character count: 600
