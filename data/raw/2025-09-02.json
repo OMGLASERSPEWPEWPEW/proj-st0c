@@ -1,0 +1,115 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-02",
+  "asof": "2025-09-02T15:05:00-05:00",
+  "verdict": "Neutral leaning cautiously positive due to stabilizing OKLO and rebound in RKLB amid elevated volatility.",
+  "tldr": "Markets reopened after Labor Day with SPY down ~0.9% and VIX up ~10%, signaling cautious sentiment. OKLO drifted slightly lower (~–0.1%) near its 5‑day SMA, while RKLB rebounded (~+1.2%), supported by renewed investor interest. Next‑day outlook is neutral‑positive: OKLO expected to climb (~+0.8%, Small) as it finds support; RKLB may edge higher (~+1.5%, Small/Moderate), though elevated volatility tempers enthusiasm. Actions: Buy OKLO, Hold RKLB.",
+  "tickers": {
+    "OKLO": {
+      "close": 73.55,
+      "pct_change": -0.12,
+      "streak": "Down 1",
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": false,
+      "predicted_next_day_pct": 0.8,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 40,
+      "dip_exhaustion_prob": 60
+    },
+    "RKLB": {
+      "close": 48.43,
+      "pct_change": 1.2,
+      "streak": "Up 1",
+      "call": "Neutral",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": false,
+      "predicted_next_day_pct": 1.5,
+      "expected_degree": "Small/Moderate",
+      "action": "Hold",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 70
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 638.99 },
+    "VIX": 16.55,
+    "VIXY": { "close": null },
+    "VIXM": { "close": null }
+  },
+  "prices": {
+    "OKLO": { "open": 70.30, "high": 73.54, "low": 68.96, "close": 73.55 },
+    "RKLB": { "open": 46.75, "high": 48.42, "low": 45.68, "close": 48.43 },
+    "SPY": { "open": 637.50, "high": 640.14, "low": 634.92, "close": 638.99 },
+    "VIX": { "open": 16.65, "high": 19.38, "low": 16.55, "close": 16.55 }
+  },
+  "macro_watch": [
+    {
+      "event": "Non‑Farm Payrolls (Jobs)",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": "Friday, Sept 5"
+    },
+    {
+      "event": "CPI / Core PCE (Inflation)",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": "Mid‑September"
+    },
+    {
+      "event": "ISM Manufacturing & Services, Retail Sales, PPI, Initial Claims",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": "Early‑Mid September"
+    },
+    {
+      "event": "FOMC Meeting / Dots",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": "Sept 16‑17"
+    }
+  ],
+  "sources": [
+    {
+      "id": "today‑prices",
+      "type": "price",
+      "tickers": ["OKLO","RKLB","SPY","VIX"],
+      "publisher": "Yahoo Finance / StockAnalysis",
+      "author": null,
+      "title": "Historical close data for OKLO, RKLB, SPY, VIX on Sep 2, 2025",
+      "url": null,
+      "date_accessed": "2025‑09‑02",
+      "stance": "neutral",
+      "excerpt": "OKLO closed 73.55, RKLB 48.43, SPY 638.99, VIX 16.55",
+      "claims": []
+    },
+    {
+      "id": "macro‑cautious",
+      "type": "macro",
+      "tickers": [],
+      "publisher": "Reuters",
+      "author": null,
+      "title": "Wall St hits over one‑week low on tariff uncertainty, data in focus",
+      "url": null,
+      "date_accessed": "2025‑09‑02",
+      "stance": "neutral",
+      "excerpt": "SPY lost ground, VIX hit three‑week high amid tariff concerns.",
+      "claims": []
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Finding support near 5‑day SMA" },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Small/Moderate", "reason": "Rebound after dip amid space‑tech interest; macro volatility supports momentum" }
+    }
+  },
+  "totals": {
+    "correct": 0,
+    "incorrect": 2,
+    "success_rate": 0.0
+  },
+  "notes": "Markets reopened after holiday; elevated VIX remains a key risk; macro cluster ahead."
+}

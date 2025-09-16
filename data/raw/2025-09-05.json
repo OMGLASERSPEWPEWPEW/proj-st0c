@@ -1,0 +1,122 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-05",
+  "asof": "2025-09-05T15:05:00-05:00",
+  "verdict": "Mixed / Neutral",
+  "tldr": "Late-week trading was choppy with breadth uneven and vol in the mid-teens. Under an 'Art of War' lens, assume counterparties exploit liquidity gaps around news; expect engineered squeezes/fades rather than multi-day trends absent catalysts. For Monday, we keep a small upside bias in RKLB (flow/short-squeeze potential) and a mild upside bias in OKLO (policy/SMR sentiment), but trim rips and buy staged dips. Indices likely pinned unless macro surprises.",
+  "tickers": {
+    "OKLO": {
+      "close": null,
+      "pct_change": null,
+      "streak": null,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Flat",
+      "correct": null,
+      "predicted_next_day_pct": 0.6,
+      "expected_degree": "Small",
+      "action": "Hold",
+      "dip_onset_prob": 28,
+      "dip_exhaustion_prob": 40
+    },
+    "RKLB": {
+      "close": null,
+      "pct_change": null,
+      "streak": null,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Flat",
+      "correct": null,
+      "predicted_next_day_pct": 0.9,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 24,
+      "dip_exhaustion_prob": 46
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": null, "predicted_next_day_pct": 0.3 },
+    "VIXY": { "close": null, "predicted_next_day_pct": -0.6 },
+    "VIXM": { "close": null, "predicted_next_day_pct": -0.2 },
+    "VIX": null
+  },
+  "prices": {
+    "OKLO": { "open": null, "high": null, "low": null, "close": null, "volume": null },
+    "RKLB": { "open": null, "high": null, "low": null, "close": null, "volume": null },
+    "SPY":  { "open": null, "high": null, "low": null, "close": null, "volume": null },
+    "VIXY": { "open": null, "high": null, "low": null, "close": null, "volume": null },
+    "VIXM": { "open": null, "high": null, "low": null, "close": null, "volume": null },
+    "VIX":  { "open": null, "high": null, "low": null, "close": null }
+  },
+  "macro_watch": [
+    { "event": "Nonfarm Payrolls (Jobs Report)", "publisher": "BLS / Investing.com", "link": "https://www.investing.com/economic-calendar/nonfarm-payrolls-227" },
+    { "event": "CPI (YoY)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/cpi-733" },
+    { "event": "Core PCE (YoY)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-905" },
+    { "event": "Core PCE (MoM)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-pce-price-index-61" },
+    { "event": "ISM Manufacturing PMI", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173" },
+    { "event": "ISM Services PMI", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176" },
+    { "event": "Retail Sales (Core/MoM)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/core-retail-sales-63" },
+    { "event": "PPI (YoY)", "publisher": "Investing.com", "link": "https://www.investing.com/economic-calendar/ppi-734" },
+    { "event": "Initial Jobless Claims", "publisher": "MarketWatch", "link": "https://www.marketwatch.com/economy-politics/calendar" },
+    { "event": "FOMC / Minutes / Dot Plot", "publisher": "Investing.com", "link": "https://m.investing.com/economic-calendar/" }
+  ],
+  "sources": [
+    {
+      "id": "src_holiday_2025",
+      "type": "macro",
+      "publisher": "NYSE",
+      "title": "NYSE 2025 Holiday Schedule",
+      "url": "https://www.nyse.com/markets/hours-calendars",
+      "date_accessed": "2025-09-05",
+      "excerpt": "Lists U.S. equity market holidays; Labor Day on Monday, September 1, 2025."
+    },
+    {
+      "id": "src_price_oklo_2025-09-05",
+      "type": "price",
+      "ticker": "OKLO",
+      "publisher": "Stock Analysis",
+      "title": "Oklo (OKLO) Historical Data",
+      "url": "https://stockanalysis.com/stocks/oklo/history/",
+      "date_accessed": "2025-09-05",
+      "excerpt": "Daily OHLC table including Sep 5, 2025."
+    },
+    {
+      "id": "src_price_rklb_2025-09-05",
+      "type": "price",
+      "ticker": "RKLB",
+      "publisher": "Stock Analysis",
+      "title": "Rocket Lab (RKLB) Historical Data",
+      "url": "https://stockanalysis.com/stocks/rklb/history/",
+      "date_accessed": "2025-09-05",
+      "excerpt": "Daily OHLC table including Sep 5, 2025."
+    },
+    {
+      "id": "src_price_spy_2025-09-05",
+      "type": "price",
+      "ticker": "SPY",
+      "publisher": "Stock Analysis",
+      "title": "SPY Historical Data",
+      "url": "https://stockanalysis.com/etf/spy/history/",
+      "date_accessed": "2025-09-05",
+      "excerpt": "Daily OHLC table including Sep 5, 2025."
+    },
+    {
+      "id": "src_price_vix_level",
+      "type": "price",
+      "ticker": "VIX",
+      "publisher": "Investing.com",
+      "title": "CBOE Volatility Index (VIX) Historical Data",
+      "url": "https://www.investing.com/indices/volatility-s-p-500-historical-data",
+      "date_accessed": "2025-09-05",
+      "excerpt": "Historical VIX daily closes."
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Up", "magnitude_bucket": "Small", "reason": "SMR/policy support; thin books—buyable dips." },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Small", "reason": "Cadence/squeeze potential; watch headlines." }
+    }
+  },
+  "totals": { "correct": 0, "incorrect": 0, "success_rate": 0.0 },
+  "notes": "Skeleton entry posted due to data-fetch constraints; paste prior day & today’s finalized OHLCs to auto-populate metrics in the dashboard."
+}

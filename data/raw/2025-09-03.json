@@ -1,0 +1,116 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-03",
+  "asof": "2025-09-03T15:05:00-05:00",
+  "verdict": "Cautiously optimistic—RKLB momentum and easing volatility provide upside, while OKLO shows further downside risk.",
+  "tldr": "Markets rebounded post‑Labor Day with SPY up ~0.4% and VIX easing (~‑0.9%). OKLO fell ~‑2.3%, while RKLB rallied ~+1.9% amid analyst upgrades. OKLO likely to see further pullback (~‑1.5%, Moderate), RKLB projected to continue upward (~+2.0%, Moderate). Actions: Sell OKLO, Buy RKLB.",
+  "tickers": {
+    "OKLO": {
+      "close": 72.24,
+      "pct_change": -2.27,
+      "streak": "Down 1",
+      "call": "Negative",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": false,
+      "predicted_next_day_pct": -1.5,
+      "expected_degree": "Moderate",
+      "action": "Sell",
+      "dip_onset_prob": 60,
+      "dip_exhaustion_prob": 40
+    },
+    "RKLB": {
+      "close": 48.13,
+      "pct_change": 1.9,
+      "streak": "Up 1",
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": false,
+      "predicted_next_day_pct": 2.0,
+      "expected_degree": "Moderate",
+      "action": "Buy",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 70
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 642.77 },
+    "VIX": 16.89,
+    "VIXY": { "close": null },
+    "VIXM": { "close": null }
+  },
+  "prices": {
+    "OKLO": { "open": 74.40, "high": 76.54, "low": 71.74, "close": 72.24 },
+    "RKLB": { "open": 47.71, "high": 50.85, "low": 47.02, "close": 48.13 },
+    "SPY": { "open": 642.67, "high": 644.20, "low": 640.50, "close": 642.77 },
+    "VIX": { "open": null, "high": null, "low": null, "close": 16.89 }
+  },
+  "macro_watch": [
+    {
+      "event": "Alphabet antitrust ruling & tech sentiment",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": null
+    },
+    {
+      "event": "JOLTS, NFP, CPI, PCE, ISM, Retail Sales, FOMC",
+      "source": "Investopedia/Reuters",
+      "link": null,
+      "next_release_hint": "This week to mid‑September"
+    }
+  ],
+  "sources": [
+    {
+      "id": "prices-today",
+      "type": "price",
+      "tickers": ["OKLO","RKLB","SPY","VIX"],
+      "publisher": "Yahoo Finance / Market data",
+      "author": null,
+      "title": "Daily close data for OKLO, RKLB, SPY, VIX on Sep 3, 2025",
+      "url": null,
+      "date_accessed": "2025-09-03",
+      "stance": "neutral",
+      "excerpt": "OKLO closed ~72.24 (‑2.27%), RKLB ~48.13 (+1.9%), SPY ~642.77 (+0.39%), VIX ~16.89 (‑0.93%)",
+      "claims": []
+    },
+    {
+      "id": "alpha-ruling",
+      "type": "macro",
+      "tickers": [],
+      "publisher": "Reuters",
+      "author": null,
+      "title": "Antitrust win for Alphabet boosts tech, Fed cut expectations rise",
+      "url": null,
+      "date_accessed": "2025-09-03",
+      "stance": "positive",
+      "excerpt": "Alphabet got antitrust relief; markets anticipate Fed rate cut; SPY up, VIX down",
+      "claims": []
+    },
+    {
+      "id": "rklb-upgrades",
+      "type": "company_news",
+      "tickers": ["RKLB"],
+      "publisher": "MarketBeat",
+      "author": null,
+      "title": "Rocket Lab receives upgrades, stock rebounds",
+      "url": null,
+      "date_accessed": "2025-09-03",
+      "stance": "positive",
+      "excerpt": "Broker upgrades lifted target prices; sentiment improved",
+      "claims": []
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Down", "magnitude_bucket": "Moderate", "reason": "Post‑rally weakness and technical breakdown" },
+      "RKLB": { "direction": "Up", "magnitude_bucket": "Moderate", "reason": "Momentum momentum + broker sentiment amid easing volatility" }
+    }
+  },
+  "totals": {
+    "correct": 0,
+    "incorrect": 2,
+    "success_rate": 0.0
+  },
+  "notes": "Market regained footing post-holiday; VIX easing supports risk assets; macro calendar now dominates."
+}

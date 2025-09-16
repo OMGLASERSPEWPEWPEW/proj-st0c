@@ -1,20 +1,25 @@
-# /.gitignore
+# File: .gitignore
+
+# Environment variables and secrets
+# ---------------------------------
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
 
 # Python / Machine Learning specific
 # ---------------------------------
 # Ignore the virtual environment folder
 /ml/venv/
-
 # Ignore Python cache files
-__pycache__/
+**pycache**/
 *.pyc
-
 # Ignore processed data, as it can be regenerated from /data/raw
 /ml/processed_data/
-
 # Ignore trained models, as they are large binary files
 /ml/models/
-
 
 # Node.js / Frontend specific (can be redundant with frontend/.gitignore, but good practice)
 # ---------------------------------
@@ -26,15 +31,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-
 # OS-specific files
 # ---------------------------------
 .DS_Store
 Thumbs.db
 
-
 # IDE / Editor specific
 # ---------------------------------
 .vscode/
 
-# File: .gitignore - Character count: 597
+# File: .gitignore - Character count: 758

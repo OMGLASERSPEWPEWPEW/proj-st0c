@@ -1,0 +1,97 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-04",
+  "asof": "2025-09-04T15:05:00-05:00",
+  "verdict": "Cautiously biased negative as weak labor data drives risk-off sentiment, with RKLB showing strong downside and OKLO pressured but potentially stabilizing.",
+  "tldr": "U.S. markets ended modestly higher as soft private payrolls and rising jobless claims fueled Fed cut expectations. SPY gained ~0.8%, while OKLO slipped ~‑1.6% and RKLB dropped sharply ~‑12%. VIX eased ~‑5%. Expect small further downside in OKLO (~‑1%, Small) as it remains pressured, and larger continuation lower in RKLB (~‑2%, Moderate). Actions: Hold OKLO, Sell RKLB.",
+  "tickers": {
+    "OKLO": {
+      "close": 69.78,
+      "pct_change": -1.57,
+      "streak": 0,
+      "call": "Neutral",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": true,
+      "predicted_next_day_pct": -1.0,
+      "expected_degree": "Small",
+      "action": "Hold",
+      "dip_onset_prob": 70,
+      "dip_exhaustion_prob": 30
+    },
+    "RKLB": {
+      "close": 42.82,
+      "pct_change": -1.61,
+      "streak": 0,
+      "call": "Negative",
+      "confidence": 3,
+      "actual_move": "Down",
+      "correct": false,
+      "predicted_next_day_pct": -2.0,
+      "expected_degree": "Large",
+      "action": "Sell",
+      "dip_onset_prob": 85,
+      "dip_exhaustion_prob": 15
+    }
+  },
+  "benchmarks": {
+    "SPY": { "close": 648.01 },
+    "VIX": 15.49,
+    "VIXY": { "close": null },
+    "VIXM": { "close": null }
+  },
+  "prices": {
+    "OKLO": { "open": 70.92, "high": 73.47, "low": 68.93, "close": 69.78 },
+    "RKLB": { "open": 47.71, "high": 50.85, "low": 47.02, "close": 42.82 },
+    "SPY": { "open": 644.42, "high": 648.30, "low": 643.56, "close": 648.01 },
+    "VIX": { "open": null, "high": null, "low": null, "close": 15.49 }
+  },
+  "macro_watch": [
+    {
+      "event": "Private payrolls slowdown & rising claims",
+      "source": "Reuters",
+      "link": null,
+      "next_release_hint": "Jobs/NFP Fri; CPI, ISM, Retail, PPI, FOMC mid‑Sep"
+    }
+  ],
+  "sources": [
+    {
+      "id": "prices-today",
+      "type": "price",
+      "tickers": ["OKLO","RKLB","SPY","VIX"],
+      "publisher": "Yahoo Finance / Market data",
+      "author": null,
+      "title": "Daily close data for OKLO, RKLB, SPY, VIX on Sep 4, 2025",
+      "url": null,
+      "date_accessed": "2025-09-04",
+      "stance": "neutral",
+      "excerpt": "OKLO ~69.78 (‑1.6%), RKLB ~42.82 (‑1.6% daily), SPY ~648.01 (+0.66%), VIX ~15.49 (‑4.95%)",
+      "claims": []
+    },
+    {
+      "id": "soft-payrolls",
+      "type": "macro",
+      "tickers": [],
+      "publisher": "Reuters",
+      "author": null,
+      "title": "Wall St muted after soft labor data; Fed cut bets rise",
+      "url": null,
+      "date_accessed": "2025-09-04",
+      "stance": "neutral",
+      "excerpt": "Private payrolls missed expectations, jobless claims rose, boosting Fed cut expectations",
+      "claims": []
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": { "direction": "Down", "magnitude_bucket": "Small", "reason": "Weak macro and technical pressure" },
+      "RKLB": { "direction": "Down", "magnitude_bucket": "Large", "reason": "Strong downside momentum amid risk‑off" }
+    }
+  },
+  "totals": {
+    "correct": 1,
+    "incorrect": 1,
+    "success_rate": 50.0
+  },
+  "notes": "Markets remain highly sensitive to employment data; RKLB especially vulnerable amid tech‑space risk-off."
+}
