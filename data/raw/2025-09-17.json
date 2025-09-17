@@ -1,0 +1,239 @@
+{
+  "schema_version": "2.1",
+  "date": "2025-09-17",
+  "asof": "2025-09-17T15:05:00-05:00",
+  "verdict": "Risk-on",
+  "tldr": "On September 17, 2025, markets are buoyed by strong risk appetite amid expectations of a 25\u2011basis\u2011point Fed rate cut and dovish forward guidance. SPY trades near 659.02, slightly down intraday, while volatility gauges VIXY (32.99) and VIXM (16.06) are modestly lower, and VIX stands around 15.18, signaling subdued fear. Oklo (OKLO) closed near $93.71, up slightly intraday, driven by bullish analyst coverage and strategic partnerships. Rocket Lab (RKLB) trades around $48.13, supported by robust launch activity and raised price targets. Economic calendar is dominated by the Fed decision and \u201cVix\u2011piration\u201d ahead of triple witching. Looking ahead, SPY may edge higher modestly (~+0.3%) if the Fed delivers dovish tone; OKLO could continue its rally (~+2\u20133%) on momentum and AI/nuclear tailwinds; RKLB may see moderate gains (~+1\u20132%) on launch optimism. Volatility likely remains contained unless surprises emerge from Fed commentary.",
+  "tickers": {
+    "OKLO": {
+      "close": 93.71,
+      "pct_change": -2.12,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Down",
+      "correct": null,
+      "predicted_next_day_pct": 2.5,
+      "expected_degree": "Moderate",
+      "action": "Buy",
+      "dip_onset_prob": 35,
+      "dip_exhaustion_prob": 55
+    },
+    "RKLB": {
+      "close": 48.13,
+      "pct_change": 1.86,
+      "streak": 1,
+      "call": "Positive",
+      "confidence": 2,
+      "actual_move": "Up",
+      "correct": null,
+      "predicted_next_day_pct": 1.5,
+      "expected_degree": "Small",
+      "action": "Buy",
+      "dip_onset_prob": 30,
+      "dip_exhaustion_prob": 60
+    }
+  },
+  "benchmarks": {
+    "SPY": {
+      "close": 659.02,
+      "predicted_next_day_pct": 0.3
+    },
+    "VIXY": {
+      "close": 32.99
+    },
+    "VIXM": {
+      "close": 16.06
+    },
+    "VIX": 15.18
+  },
+  "prices": {
+    "OKLO": {
+      "open": 95.58,
+      "high": 96.75,
+      "low": 92.5,
+      "close": 93.71,
+      "volume": 7288817
+    },
+    "RKLB": {
+      "open": 47.71,
+      "high": 50.85,
+      "low": 47.02,
+      "close": 48.13,
+      "volume": 47698035
+    },
+    "SPY": {
+      "open": 660.07,
+      "high": 660.64,
+      "low": 658.14,
+      "close": 659.02,
+      "volume": 28212728
+    },
+    "VIXY": {
+      "open": 33.32,
+      "high": 33.73,
+      "low": 32.95,
+      "close": 32.99,
+      "volume": 832381
+    },
+    "VIXM": {
+      "open": 16.09,
+      "high": 16.19,
+      "low": 16.04,
+      "close": 16.06,
+      "volume": 59826
+    },
+    "VIX": {
+      "open": 15.23,
+      "high": 16.92,
+      "low": 14.74,
+      "close": 15.18
+    }
+  },
+  "macro_watch": [
+    {
+      "event": "Federal Reserve interest rate decision",
+      "publisher": "Reuters",
+      "link": "unique_source_id_fed",
+      "next_release_hint": "December 2025"
+    },
+    {
+      "event": "VIX\u2011piration and triple witching",
+      "publisher": "MarketWatch",
+      "link": "unique_source_id_vixpiration",
+      "next_release_hint": "Quarterly expirations"
+    }
+  ],
+  "sources": [
+    {
+      "id": "source_oklo_price",
+      "type": "price",
+      "ticker": "OKLO",
+      "publisher": "Labrador Finance Tool",
+      "title": "Oklo Inc. real\u2011time price",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Price is 93.71 USD currently with a change of -2.12000 (-0.02212%)"
+    },
+    {
+      "id": "source_rklb_price",
+      "type": "price",
+      "ticker": "RKLB",
+      "publisher": "Labrador Finance Tool",
+      "title": "Rocket Lab Corp. real\u2011time price",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Price is 48.13 USD currently with a change of 0.88000 (0.01864%)"
+    },
+    {
+      "id": "source_spy_price",
+      "type": "price",
+      "ticker": "SPY",
+      "publisher": "Labrador Finance Tool",
+      "title": "SPDR S&P 500 ETF Trust real\u2011time price",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Price is 659.02 USD currently with a change of -0.98000 (-0.00148%)"
+    },
+    {
+      "id": "source_vixy_price",
+      "type": "price",
+      "ticker": "VIXY",
+      "publisher": "Labrador Finance Tool",
+      "title": "ProShares VIX Short\u2011Term Futures ETF real\u2011time price",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Price is 32.99 USD currently with a change of -0.59000 (-0.01757%)"
+    },
+    {
+      "id": "source_vixm_price",
+      "type": "price",
+      "ticker": "VIXM",
+      "publisher": "Labrador Finance Tool",
+      "title": "ProShares VIX Mid\u2011Term Futures ETF real\u2011time price",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Price is 16.06 USD currently with a change of -0.13000 (-0.00803%)"
+    },
+    {
+      "id": "source_vix_level",
+      "type": "price",
+      "ticker": "VIX",
+      "publisher": "CNBC",
+      "title": "CBOE Volatility Index",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Last 15.18, open 15.23, high 16.92, low 14.74"
+    },
+    {
+      "id": "source_fed_news",
+      "type": "news",
+      "ticker": "",
+      "publisher": "Reuters",
+      "title": "Fed expected to cut rates, update views",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Fed expected to announce a quarter\u2011point interest rate cut amid weakening labor market data"
+    },
+    {
+      "id": "source_vixpiration_news",
+      "type": "news",
+      "ticker": "",
+      "publisher": "MarketWatch",
+      "title": "Investors are in for a wild week \u2013 Fed meeting and Vix\u2011piration",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Fed meeting and expiration of VIX\u2011linked options (\u201cVix\u2011piration\u201d) and triple witching could fuel market swings"
+    },
+    {
+      "id": "source_oklo_news1",
+      "type": "news",
+      "ticker": "OKLO",
+      "publisher": "Investopedia",
+      "title": "Oklo Stock Climbs as BofA kicks off coverage with bullish rating",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "BofA initiated coverage with a buy rating, stock rose over 4% to near $75"
+    },
+    {
+      "id": "source_oklo_news2",
+      "type": "news",
+      "ticker": "OKLO",
+      "publisher": "Reuters",
+      "title": "Oklo moves closer to nuclear power agreement with US Air Force",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Oklo advancing toward power purchase agreement with US Air Force for micro\u2011reactor at Eielson AFB"
+    },
+    {
+      "id": "source_rklb_news",
+      "type": "news",
+      "ticker": "RKLB",
+      "publisher": "MarketWatch",
+      "title": "Rocket Lab\u2019s stock has surged to record highs",
+      "url": "",
+      "date_accessed": "2025-09-17",
+      "excerpt": "Stock reached record intraday high of $45.48 and closing high of $44.60 after Citi raised price target to $50"
+    }
+  ],
+  "labels": {
+    "prediction_for_next_day": {
+      "OKLO": {
+        "direction": "Up",
+        "magnitude_bucket": "Moderate",
+        "reason": "Momentum from bullish analyst coverage and strategic partnerships"
+      },
+      "RKLB": {
+        "direction": "Up",
+        "magnitude_bucket": "Small",
+        "reason": "Strong launch activity and raised price targets"
+      }
+    }
+  },
+  "totals": {
+    "correct": 0,
+    "incorrect": 0,
+    "success_rate": 0.0
+  },
+  "notes": "Analysis based on real market data found via web search"
+}

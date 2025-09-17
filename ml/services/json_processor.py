@@ -24,20 +24,11 @@ class JSONProcessor:
         if cleaned.endswith('```'):
             cleaned = cleaned[:-3]
         
-        # Remove any trailing notes or comments
-        if '(Note:' in cleaned:
-            cleaned = cleaned.split('(Note:')[0]
-        
-        # Remove common LLM chattiness
-        if 'Here is' in cleaned or 'Here\'s' in cleaned:
-            # Find the first { and take everything from there
-            bracket_start = cleaned.find('{')
-            if bracket_start != -1:
-                cleaned = cleaned[bracket_start:]
-        
-        # NEW: Extract only the JSON object from { to }
+        # NEW: More robust JSON extraction
         if '{' in cleaned:
             start = cleaned.find('{')
+            
+            # Find the matching closing brace
             brace_count = 0
             end = start
             
@@ -50,10 +41,12 @@ class JSONProcessor:
                         end = i + 1
                         break
             
+            # Extract just the JSON object
             cleaned = cleaned[start:end]
-        
-        # Remove any leading/trailing whitespace
-        cleaned = cleaned.strip()
+            
+            # Additional cleaning for common issues
+            cleaned = cleaned.replace('\n', ' ')  # Remove newlines
+            cleaned = ' '.join(cleaned.split())   # Normalize whitespace
         
         print("json_processor.JSONProcessor.clean_llm_response: Response cleaned")
         return cleaned
